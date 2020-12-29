@@ -11,6 +11,8 @@
 - **Avoiding dangerous blocks** Obviously, it knows not to walk through fire or on magma, not to corner over lava (that deals some damage), not to break any blocks touching a liquid (it might drown), etc.
 - **Parkour** Sprint jumping over 1, 2, or 3 block gaps
 - **Parkour place** Sprint jumping over a 3 block gap and placing the block to land on while executing the jump. It's really cool.
+- **Sprint jumps** Optimize pathing to do sprint jumps
+- **Sprint jumps with 2 block high ceiling** attempts to choose paths with 2 block high ceilings and will create one if it is 3 blocks high
 - **Pigs** It can sort of control pigs. I wouldn't rely on it though.
 
 # Pathing method
