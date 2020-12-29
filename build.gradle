@@ -1,0 +1,236 @@
+/*
+ * This file is part of Baritone.
+ *
+ * Baritone is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Baritone is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+group 'baritone'
+version '1.6.1'
+
+buildscript {
+    repositories {
+        maven {
+            name = 'forge'
+            url = 'http://files.minecraftforge.net/maven'
+        }
+        maven {
+            name = 'impactdevelopment-repo'
+            url = 'https://impactdevelopment.github.io/maven/'
+        }
+        jcenter()
+    }
+
+    dependencies {
+        classpath group: 'com.github.ImpactDevelopment', name: 'ForgeGradle', version: '3.0.115'
+        classpath group: 'com.github.ImpactDevelopment', name: 'MixinGradle', version: '0.6.2'
+    }
+}
+
+import baritone.gradle.task.CreateDistTask
+import baritone.gradle.task.ProguardTask
+
+import net.minecraftforge.gradle.userdev.tasks.GenerateSRG
+import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace
+import org.apache.tools.ant.taskdefs.condition.Os
+
+apply plugin: 'java'
+apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'org.spongepowered.mixin'
+
+sourceCompatibility = targetCompatibility = '1.8'
+compileJava {
+    sourceCompatibility = targetCompatibility = '1.8'
+    options.encoding = "UTF-8" // allow emoji in comments :^)
+}
+
+sourceSets {
+    api {
+        compileClasspath += main.compileClasspath
+    }
+    main {
+        compileClasspath += api.output
+    }
+    test {
+        compileClasspath += main.compileClasspath + main.runtimeClasspath + main.output
+        runtimeClasspath += main.compileClasspath + main.runtimeClasspath + main.output
+    }
+    launch {
+        compileClasspath += main.compileClasspath + main.runtimeClasspath + main.output
+        runtimeClasspath += main.compileClasspath + main.runtimeClasspath + main.output
+    }
+
+    schematica_api {
+        compileClasspath += main.compileClasspath
+    }
+
+    main {
+        compileClasspath += schematica_api.output
+    }
+}
+
+task sourceJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.api.allSource
+}
+
+minecraft {
+    mappings channel: 'snapshot', version: '20200723-1.16.1'
+
+    if (getProject().hasProperty("baritone.forge_build")) {
+        reobfMappings 'searge'
+    } else {
+        reobfMappings 'notch'
+    }
+
+    runs {
+        client {
+            workingDirectory project.file('run')
+            source sourceSets.launch
+
+            main 'baritone.launch.LaunchTesting'
+
+            environment 'assetIndex', '{asset_index}'
+            environment 'assetDirectory', downloadAssets.output
+            environment 'nativesDirectory', extractNatives.output
+
+            environment 'tweakClass', 'baritone.launch.BaritoneTweaker'
+
+            if (Os.isFamily(Os.FAMILY_MAC)) {
+                jvmArgs "-XstartOnFirstThread"
+            }
+        }
+
+        autoTest {
+            workingDirectory project.file('autotest')
+            source sourceSets.launch
+
+            main 'baritone.launch.LaunchTesting'
+
+            environment 'assetIndex', '{asset_index}'
+            environment 'assetDirectory', downloadAssets.output
+            environment 'nativesDirectory', extractNatives.output
+
+            environment 'tweakClass', 'baritone.launch.BaritoneTweaker'
+            environment 'BARITONE_AUTO_TEST', 'true'
+
+            if (Os.isFamily(Os.FAMILY_MAC)) {
+                jvmArgs "-XstartOnFirstThread"
+            }
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+
+    maven {
+        name = 'spongepowered-repo'
+        url = 'http://repo.spongepowered.org/maven/'
+    }
+
+    maven {
+        name = 'impactdevelopment-repo'
+        url = 'https://impactdevelopment.github.io/maven/'
+    }
+}
+
+dependencies {
+    minecraft 'com.github.ImpactDevelopment:Vanilla:1.16.1'
+
+    runtime launchCompile('net.minecraft:launchwrapper:1.12') {
+        exclude module: 'lwjgl'
+    }
+    runtime launchCompile('org.ow2.asm:asm-debug-all:5.2')
+    runtime launchCompile('com.github.ImpactDevelopment:SimpleTweaker:1.2')
+    runtime launchCompile('org.spongepowered:mixin:0.8.+') {
+        // Mixin includes a lot of dependencies that are too up-to-date
+        exclude module: 'launchwrapper'
+        exclude module: 'guava'
+        exclude module: 'gson'
+        exclude module: 'commons-io'
+        exclude module: 'log4j-core'
+    }
+
+    testImplementation 'junit:junit:4.12'
+}
+
+mixin {
+    defaultObfuscationEnv searge
+    add sourceSets.launch, 'mixins.baritone.refmap.json'
+}
+
+javadoc {
+    options.addStringOption('Xwerror', '-quiet') // makes the build fail on travis when there is a javadoc error
+    options.linkSource true
+    options.encoding "UTF-8" // allow emoji in comments :^)
+    source = sourceSets.api.allJava
+    classpath += sourceSets.api.compileClasspath
+}
+
+jar {
+    from sourceSets.launch.output, sourceSets.api.output
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+
+    manifest {
+        attributes(
+                'MixinConfigs': 'mixins.baritone.json',
+                "MixinConnector": "baritone.launch.BaritoneMixinConnector",
+
+                'Implementation-Title': 'Baritone',
+                'Implementation-Version': version,
+        )
+    }
+}
+
+// skidded from ProguardTask
+File getClientJar() {
+    return project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().findByName("launch").getRuntimeClasspath().getFiles()
+            .stream()
+            .filter({f -> f.toString().endsWith("client-extra.jar")})
+            .map({f -> new File(f.getParentFile(), "client.jar")})
+            .findFirst()
+            .get()
+}
+
+task copyMcJar(type: Copy) {
+    def mcJar = {getClientJar()}
+
+    from mcJar
+    into 'build/createMcSrgJar/'
+    rename {'client-srg.jar'}
+}
+
+task createSrgMc(type: RenameJarInPlace) {
+    setInput(new File(copyMcJar.getOutputs().getFiles().getSingleFile(), "client-srg.jar"))
+    setClasspath(files({getClientJar()}))
+
+    // fork
+    setMappingType(net.minecraftforge.gradle.common.util.MappingFile.Mapping.SEARGE)
+    setJarTask('trans alaska pipeline')
+}
+project.afterEvaluate {
+    createSrgMc.dependsOn(extractSrg, copyMcJar)
+    createSrgMc.setMappings(extractSrg.getOutput())
+}
+
+
+task proguard(type: ProguardTask, dependsOn: createSrgMc) { // TODO: dont need to create srg mc if doing notch build
+    url 'https://downloads.sourceforge.net/project/proguard/proguard/6.0/proguard6.0.3.zip'
+    extract 'proguard6.0.3/lib/proguard.jar'
+}
+
+task createDist(type: CreateDistTask, dependsOn: proguard)
+
+build.finalizedBy(createDist)
