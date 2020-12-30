@@ -35,9 +35,9 @@ public interface ActionCosts {
 	double SPRINT_JUMP_ONE_BLOCK_COST         = 20 / 7.143; // 2.799
 	double SPRINT_JUMP_CEILING_ONE_BLOCK_COST = 20 / 10;    // 2.000
 	// Guess
-	double SPRINT_ONE_BLOCK_COST              = 20 / 8;  // 2.5
-	double SPRINT_JUMP_ONE_BLOCK_COST         = 20 / 12; // 1.667
-	double SPRINT_JUMP_CEILING_ONE_BLOCK_COST = 20 / 16; // 1.25
+	double SPRINT_ICE_ONE_BLOCK_COST              = 20 / 8;  // 2.5
+	double SPRINT_ICE_JUMP_ONE_BLOCK_COST         = 20 / 12; // 1.667
+	double SPRINT_ICE_JUMP_CEILING_ONE_BLOCK_COST = 20 / 16; // 1.25
 
 	double SPRINT_MULTIPLIER = SPRINT_ONE_BLOCK_COST / WALK_ONE_BLOCK_COST; // 0.769
 	/**

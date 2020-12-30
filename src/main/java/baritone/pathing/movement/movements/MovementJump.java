@@ -38,7 +38,7 @@ import net.minecraft.util.Direction;
 import java.util.HashSet;
 import java.util.Set;
 
-public class MovementParkour extends Movement {
+public class MovementJump extends Movement {
 
 	private static final BetterBlockPos[] EMPTY = new BetterBlockPos[] {};
 
@@ -46,7 +46,7 @@ public class MovementParkour extends Movement {
 	private final int dist;
 	private final boolean ascend;
 
-	private MovementParkour(IBaritone baritone, BetterBlockPos src, int dist,
+	private MovementJump(IBaritone baritone, BetterBlockPos src, int dist,
 		Direction dir, boolean ascend) {
 		super(baritone, src, src.offset(dir, dist).up(ascend ? 1 : 0), EMPTY,
 			src.offset(dir, dist).down(ascend ? 0 : 1));
@@ -55,18 +55,24 @@ public class MovementParkour extends Movement {
 		this.ascend    = ascend;
 	}
 
-	public static MovementParkour cost(
+	public static MovementJump cost(
 		CalculationContext context, BetterBlockPos src, Direction direction) {
 		MutableMoveResult res = new MutableMoveResult();
 		cost(context, src.x, src.y, src.z, direction, res);
 		int dist = Math.abs(res.x - src.x) + Math.abs(res.z - src.z);
-		return new MovementParkour(
+		return new MovementJump(
 			context.getBaritone(), src, dist, direction, res.y > src.y);
 	}
 
 	public static void cost(CalculationContext context, int x, int y, int z,
 		Direction dir, MutableMoveResult res) {
 		if(!context.allowParkour) {
+			return;
+		}
+		if(!context.allowSprint) {
+			return;
+		}
+		if(!context.allowSprintJumps) {
 			return;
 		}
 		if(y == 256 && !context.allowJumpAt256) {
@@ -98,9 +104,10 @@ public class MovementParkour extends Movement {
 			   context, x + xDiff, y + 2, z + zDiff)) {
 			return;
 		}
-		if(!MovementHelper.fullyPassable(context, x, y + 2, z)) {
-			return;
-		}
+		// Encourage block above player
+		// if(!MovementHelper.fullyPassable(context, x, y + 2, z)) {
+		//	return;
+		//}
 		BlockState standingOn = context.get(x, y - 1, z);
 		if(standingOn.getBlock() == Blocks.VINE
 			|| standingOn.getBlock() == Blocks.LADDER
@@ -153,14 +160,12 @@ public class MovementParkour extends Movement {
 					   context.bsi, destX, y - 1, destZ, landingOn)) {
 				if(checkOvershootSafety(
 					   context.bsi, destX + xDiff, y, destZ + zDiff)) {
-					res.x    = destX;
-					res.y    = y;
-					res.z    = destZ;
-					res.cost = costFromJumpDistance(i) + context.jumpPenalty;
+					res.x = destX;
+					res.y = y;
+					res.z = destZ;
+					res.cost
+						= SPRINT_JUMP_ONE_BLOCK_COST * i + context.jumpPenalty;
 				}
-				return;
-			}
-			if(!MovementHelper.fullyPassable(context, destX, y + 3, destZ)) {
 				return;
 			}
 		}
@@ -210,11 +215,11 @@ public class MovementParkour extends Movement {
 			}
 			if(MovementHelper.canPlaceAgainst(
 				   context.bsi, againstX, againstY, againstZ)) {
-				res.x = destX;
-				res.y = y;
-				res.z = destZ;
-				res.cost
-					= costFromJumpDistance(4) + placeCost + context.jumpPenalty;
+				res.x    = destX;
+				res.y    = y;
+				res.z    = destZ;
+				res.cost = SPRINT_JUMP_ONE_BLOCK_COST * 4 + placeCost
+						   + context.jumpPenalty;
 				return;
 			}
 		}
@@ -226,19 +231,6 @@ public class MovementParkour extends Movement {
 		// parkour anyway, so make sure they aren't avoidWalkingInto
 		return !MovementHelper.avoidWalkingInto(bsi.get0(x, y, z))
 			&& !MovementHelper.avoidWalkingInto(bsi.get0(x, y + 1, z));
-	}
-
-	private static double costFromJumpDistance(int dist) {
-		switch(dist) {
-		case 2:
-			return WALK_ONE_BLOCK_COST * 2; // IDK LOL
-		case 3:
-			return WALK_ONE_BLOCK_COST * 3;
-		case 4:
-			return SPRINT_ONE_BLOCK_COST * 4;
-		default:
-			throw new IllegalStateException("LOL " + dist);
-		}
 	}
 
 	@Override
@@ -322,6 +314,16 @@ public class MovementParkour extends Movement {
 						= Math.max(Math.abs(xDiff), Math.abs(zDiff));
 					if(distFromStart < 0.7) {
 						return state;
+					}
+				}
+
+				// Check for ceiling jumps
+				if(ctx.allowSprintJumps2Block) {
+					// wouldsneak is weird, I don't want it
+					if(!MovementHelper.canWalkOn(
+						   ctx, src.offset(direction).up(2))) {
+						MovementHelper.attemptToPlaceABlock(state, baritone,
+							src.offset(direction).up(2), true, true);
 					}
 				}
 

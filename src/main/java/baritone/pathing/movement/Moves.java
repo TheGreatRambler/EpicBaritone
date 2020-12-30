@@ -146,6 +146,54 @@ public enum Moves {
         public double cost(CalculationContext context, int x, int y, int z) {
             return MovementAscend.cost(context, x, y, z, x - 1, z);
         }
+	},
+	
+	JUMP_NORTH(0, +1, -1) {
+        @Override
+        public Movement apply0(CalculationContext context, BetterBlockPos src) {
+            return new MovementJump(context.getBaritone(), src, new BetterBlockPos(src.x, src.y + 1, src.z - 1));
+        }
+
+        @Override
+        public double cost(CalculationContext context, int x, int y, int z) {
+            return MovementJump.cost(context, x, y, z, x, z - 1);
+        }
+    },
+
+    JUMP_SOUTH(0, +1, +1) {
+        @Override
+        public Movement apply0(CalculationContext context, BetterBlockPos src) {
+            return new MovementJump(context.getBaritone(), src, new BetterBlockPos(src.x, src.y + 1, src.z + 1));
+        }
+
+        @Override
+        public double cost(CalculationContext context, int x, int y, int z) {
+            return MovementJump.cost(context, x, y, z, x, z + 1);
+        }
+    },
+
+    JUMP_EAST(+1, +1, 0) {
+        @Override
+        public Movement apply0(CalculationContext context, BetterBlockPos src) {
+            return new MovementJump(context.getBaritone(), src, new BetterBlockPos(src.x + 1, src.y + 1, src.z));
+        }
+
+        @Override
+        public double cost(CalculationContext context, int x, int y, int z) {
+            return MovementJump.cost(context, x, y, z, x + 1, z);
+        }
+    },
+
+    JUMP_WEST(-1, +1, 0) {
+        @Override
+        public Movement apply0(CalculationContext context, BetterBlockPos src) {
+            return new MovementJump(context.getBaritone(), src, new BetterBlockPos(src.x - 1, src.y + 1, src.z));
+        }
+
+        @Override
+        public double cost(CalculationContext context, int x, int y, int z) {
+            return MovementJump.cost(context, x, y, z, x - 1, z);
+        }
     },
 
     DESCEND_EAST(+1, -1, 0, false, true) {
