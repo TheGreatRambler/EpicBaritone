@@ -27,6 +27,8 @@ import baritone.pathing.movement.MovementHelper;
 import baritone.pathing.movement.MovementState;
 import baritone.utils.BlockStateInterface;
 import baritone.utils.pathing.MutableMoveResult;
+import java.util.HashSet;
+import java.util.Set;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -35,10 +37,60 @@ import net.minecraft.fluid.Fluids;
 import net.minecraft.fluid.WaterFluid;
 import net.minecraft.util.Direction;
 
-import java.util.HashSet;
-import java.util.Set;
+public class MovementFancy extends Movement {
 
-public class MovementJump extends Movement {
+	// The exact equation used to calculate jumps in minecraft 1.9+
+	// https://www.mcpk.wiki/wiki/Nonrecursive_Movement_Formulas
+	// Also some tick counts here:
+	// https://www.reddit.com/r/Minecraft/comments/hlmjqt/doing_a_six_block_jump_is_impossible_as_per_116/
+	// Source code might be better
+	// https://www.mcpk.wiki/wiki/SourceCode:EntityLivingBase
+
+	private class JumpCalculation {
+		// Rounded values for A star
+		public int roundedX;
+		public int roundedZ;
+		// Actual values
+		public double x;
+		public int y;
+		public int z;
+		// Ticks to perform
+		public int ticks;
+		// TODO calculate distance based on first tick jump, movement speed
+		// going in, etc
+	}
+
+	private enum JumpBonuses {
+		SprintJump(0.3274);
+		StrafedSprintJump(0.291924);
+		NoSprintJump45Degree(0.1);
+
+		private final double value;
+
+		JumpBonuses(final double newValue) {
+			value = newValue;
+		}
+
+		public double getValue() {
+			return value;
+		}
+	}
+
+	private enum MovementMultipliers {
+		Sprint45Degree(1.3);
+		NormalSprint(1.274);
+		NoSprint45Degree(1.0);
+
+		private final double value;
+
+		MovementMultipliers(final double newValue) {
+			value = newValue;
+		}
+
+		public double getValue() {
+			return value;
+		}
+	}
 
 	private static final BetterBlockPos[] EMPTY = new BetterBlockPos[] {};
 
@@ -46,7 +98,7 @@ public class MovementJump extends Movement {
 	private final int dist;
 	private final boolean ascend;
 
-	private MovementJump(IBaritone baritone, BetterBlockPos src, int dist,
+	private MovementFancy(IBaritone baritone, BetterBlockPos src, int dist,
 		Direction dir, boolean ascend) {
 		super(baritone, src, src.offset(dir, dist).up(ascend ? 1 : 0), EMPTY,
 			src.offset(dir, dist).down(ascend ? 0 : 1));
@@ -55,12 +107,12 @@ public class MovementJump extends Movement {
 		this.ascend    = ascend;
 	}
 
-	public static MovementJump cost(
+	public static MovementFancy cost(
 		CalculationContext context, BetterBlockPos src, Direction direction) {
 		MutableMoveResult res = new MutableMoveResult();
 		cost(context, src.x, src.y, src.z, direction, res);
 		int dist = Math.abs(res.x - src.x) + Math.abs(res.z - src.z);
-		return new MovementJump(
+		return new MovementFancy(
 			context.getBaritone(), src, dist, direction, res.y > src.y);
 	}
 
@@ -93,7 +145,7 @@ public class MovementJump extends Movement {
 		}
 		if(MovementHelper.avoidWalkingInto(adj)
 			&& !(adj.getFluidState().getFluid()
-					   instanceof WaterFluid)) { // magma sucks
+					 instanceof WaterFluid)) { // magma sucks
 			return;
 		}
 		if(!MovementHelper.fullyPassable(
@@ -141,9 +193,9 @@ public class MovementJump extends Movement {
 				   destInto)) {
 				if(i <= 3 && context.allowParkourAscend && context.canSprint
 					&& MovementHelper.canWalkOn(
-						   context.bsi, destX, y, destZ, destInto)
+						context.bsi, destX, y, destZ, destInto)
 					&& checkOvershootSafety(
-						   context.bsi, destX + xDiff, y + 1, destZ + zDiff)) {
+						context.bsi, destX + xDiff, y + 1, destZ + zDiff)) {
 					res.x    = destX;
 					res.y    = y + 1;
 					res.z    = destZ;
@@ -152,12 +204,12 @@ public class MovementJump extends Movement {
 				return;
 			}
 			BlockState landingOn = context.bsi.get0(destX, y - 1, destZ);
-			// farmland needs to be canwalkon otherwise farm can never work at
-			// all, but we want to specifically disallow ending a jump on
+			// farmland needs to be canwalkon otherwise farm can never work
+			// at all, but we want to specifically disallow ending a jump on
 			// farmland haha
 			if(landingOn.getBlock() != Blocks.FARMLAND
 				&& MovementHelper.canWalkOn(
-					   context.bsi, destX, y - 1, destZ, landingOn)) {
+					context.bsi, destX, y - 1, destZ, landingOn)) {
 				if(checkOvershootSafety(
 					   context.bsi, destX + xDiff, y, destZ + zDiff)) {
 					res.x = destX;
@@ -227,8 +279,8 @@ public class MovementJump extends Movement {
 
 	private static boolean checkOvershootSafety(
 		BlockStateInterface bsi, int x, int y, int z) {
-		// we're going to walk into these two blocks after the landing of the
-		// parkour anyway, so make sure they aren't avoidWalkingInto
+		// we're going to walk into these two blocks after the landing of
+		// the parkour anyway, so make sure they aren't avoidWalkingInto
 		return !MovementHelper.avoidWalkingInto(bsi.get0(x, y, z))
 			&& !MovementHelper.avoidWalkingInto(bsi.get0(x, y + 1, z));
 	}
@@ -256,10 +308,10 @@ public class MovementJump extends Movement {
 
 	@Override
 	public boolean safeToCancel(MovementState state) {
-		// once this movement is instantiated, the state is default to PREPPING
-		// but once it's ticked for the first time it changes to RUNNING
-		// since we don't really know anything about momentum, it suffices to
-		// say Parkour can only be canceled on the 0th tick
+		// once this movement is instantiated, the state is default to
+		// PREPPING but once it's ticked for the first time it changes to
+		// RUNNING since we don't really know anything about momentum, it
+		// suffices to say Parkour can only be canceled on the 0th tick
 		return state.getStatus() != MovementStatus.RUNNING;
 	}
 
@@ -281,8 +333,8 @@ public class MovementJump extends Movement {
 		if(ctx.playerFeet().equals(dest)) {
 			Block d = BlockStateInterface.getBlock(ctx, dest);
 			if(d == Blocks.VINE || d == Blocks.LADDER) {
-				// it physically hurt me to add support for parkour jumping onto
-				// a vine but i did it anyway
+				// it physically hurt me to add support for parkour jumping
+				// onto a vine but i did it anyway
 				return state.setStatus(MovementStatus.SUCCESS);
 			}
 			if(ctx.player().getPositionVec().y - ctx.playerFeet().getY()
@@ -298,9 +350,9 @@ public class MovementJump extends Movement {
 						   state, baritone, dest.down(), true, false)
 						   == PlaceResult.READY_TO_PLACE) {
 					// go in the opposite order to check DOWN before all
-					// horizontals -- down is preferable because you don't have
-					// to look to the side while in midair, which could mess up
-					// the trajectory
+					// horizontals -- down is preferable because you don't
+					// have to look to the side while in midair, which could
+					// mess up the trajectory
 					state.setInput(Input.CLICK_RIGHT, true);
 				}
 				// prevent jumping too late by checking for ascend
