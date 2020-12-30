@@ -45,6 +45,7 @@ public class MovementFancy extends Movement {
 	// https://www.reddit.com/r/Minecraft/comments/hlmjqt/doing_a_six_block_jump_is_impossible_as_per_116/
 	// Source code might be better
 	// https://www.mcpk.wiki/wiki/SourceCode:EntityLivingBase
+	// https://www.mcpk.wiki/wiki/Vertical_Movement_Formulas
 
 	private class JumpCalculation {
 		// Rounded values for A star
@@ -56,6 +57,8 @@ public class MovementFancy extends Movement {
 		public int z;
 		// Ticks to perform
 		public int ticks;
+		public ArrayList<BetterBlockPos> blocksPassedThroughOffset;
+		public boolean is45Strafe;
 		// TODO calculate distance based on first tick jump, movement speed
 		// going in, etc
 	}
@@ -63,7 +66,6 @@ public class MovementFancy extends Movement {
 	private enum JumpBonuses {
 		SprintJump(0.3274);
 		StrafedSprintJump(0.291924);
-		NoSprintJump45Degree(0.1);
 
 		private final double value;
 
@@ -76,10 +78,10 @@ public class MovementFancy extends Movement {
 		}
 	}
 
+	// Attempt to strafe whenever possible
 	private enum MovementMultipliers {
 		Sprint45Degree(1.3);
 		NormalSprint(1.274);
-		NoSprint45Degree(1.0);
 
 		private final double value;
 
@@ -91,6 +93,24 @@ public class MovementFancy extends Movement {
 			return value;
 		}
 	}
+
+	private static ArrayList<JumpCalculation> getJumpCalculations() {
+		public static int subdivisions             = 10;
+		public static double radians               = Math.PI * 2;
+		public static double increaseEachSubdivion = radians / subdivisions;
+		for(double angle = 0; angle <= radians;
+			angle += increaseEachSubdivion) {
+			// Number of ticks calculated is based on
+			// https://www.mcpk.wiki/wiki/Tiers Going for a 100 block fall for
+			// now, 68 ticks
+			for(int tick = 0; tick < 69; tick++) {
+				// Calculate for 45 degree strafe and not
+			}
+		}
+	}
+
+	private static ArrayList<JumpCalculation> jumpCalculations
+		= getJumpCalculations();
 
 	private static final BetterBlockPos[] EMPTY = new BetterBlockPos[] {};
 
