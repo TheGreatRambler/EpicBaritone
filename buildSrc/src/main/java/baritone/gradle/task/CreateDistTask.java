@@ -17,17 +17,16 @@
 
 package baritone.gradle.task;
 
-import org.gradle.api.tasks.TaskAction;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
-import javax.xml.bind.DatatypeConverter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import org.gradle.api.tasks.TaskAction;
 
 /**
  * @author Brady
@@ -35,65 +34,73 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
  */
 public class CreateDistTask extends BaritoneGradleTask {
 
-    private static MessageDigest SHA1_DIGEST;
+	private static MessageDigest SHA1_DIGEST;
 
-    @TaskAction
-    protected void exec() throws Exception {
-        super.verifyArtifacts();
+	@TaskAction
+	protected void exec () throws Exception {
+		super.verifyArtifacts ();
 
-        // Define the distribution file paths
-        Path api = getRelativeFile("dist/" + getFileName(artifactApiPath));
-        Path standalone = getRelativeFile("dist/" + getFileName(artifactStandalonePath));
-        Path unoptimized = getRelativeFile("dist/" + getFileName(artifactUnoptimizedPath));
+		// Define the distribution file paths
+		Path api         = getRelativeFile ("dist/" + getFileName (artifactApiPath));
+		Path standalone  = getRelativeFile ("dist/" + getFileName (artifactStandalonePath));
+		Path unoptimized = getRelativeFile ("dist/" + getFileName (artifactUnoptimizedPath));
 
-        // NIO will not automatically create directories
-        Path dir = getRelativeFile("dist/");
-        if (!Files.exists(dir)) {
-            Files.createDirectory(dir);
-        }
+		// NIO will not automatically create directories
+		Path dir = getRelativeFile ("dist/");
+		if (!Files.exists (dir)) {
+			Files.createDirectory (dir);
+		}
 
-        // Copy build jars to dist/
-        // TODO: dont copy files that dont exist
-        Files.copy(this.artifactApiPath, api, REPLACE_EXISTING);
-        Files.copy(this.artifactStandalonePath, standalone, REPLACE_EXISTING);
-        Files.copy(this.artifactUnoptimizedPath, unoptimized, REPLACE_EXISTING);
+		// Copy build jars to dist/
+		// TODO: dont copy files that dont exist
+		Files.copy (this.artifactApiPath, api, REPLACE_EXISTING);
+		Files.copy (this.artifactStandalonePath, standalone, REPLACE_EXISTING);
+		Files.copy (this.artifactUnoptimizedPath, unoptimized, REPLACE_EXISTING);
 
-        // Calculate all checksums and format them like "shasum"
-        List<String> shasum = getAllDistJars().stream()
-                .filter(Files::exists)
-                .map(path -> sha1(path) + "  " + path.getFileName().toString())
-                .collect(Collectors.toList());
+		// Calculate all checksums and format them like "shasum"
+		List<String> shasum = getAllDistJars ().stream ().filter (Files::exists).map (path -> sha1 (path) + "  " + path.getFileName ().toString ()).collect (Collectors.toList ());
 
-        shasum.forEach(System.out::println);
+		shasum.forEach (System.out::println);
 
-        // Write the checksums to a file
-        Files.write(getRelativeFile("dist/checksums.txt"), shasum);
-    }
+		// Write the checksums to a file
+		Files.write (getRelativeFile ("dist/checksums.txt"), shasum);
+	}
 
-    private static String getFileName(Path p) {
-        return p.getFileName().toString();
-    }
+	private static String getFileName (Path p) {
+		return p.getFileName ().toString ();
+	}
 
-    private List<Path> getAllDistJars() {
-        return Arrays.asList(
-                getRelativeFile("dist/" + formatVersion(ARTIFACT_API)),
-                getRelativeFile("dist/" + formatVersion(ARTIFACT_FORGE_API)),
-                getRelativeFile("dist/" + formatVersion(ARTIFACT_STANDALONE)),
-                getRelativeFile("dist/" + formatVersion(ARTIFACT_FORGE_STANDALONE)),
-                getRelativeFile("dist/" + formatVersion(ARTIFACT_UNOPTIMIZED)),
-                getRelativeFile("dist/" + formatVersion(ARTIFACT_FORGE_UNOPTIMIZED))
-        );
-    }
+	private List<Path> getAllDistJars () {
+		return Arrays.asList (
+			getRelativeFile ("dist/" + formatVersion (ARTIFACT_API)),
+			getRelativeFile ("dist/" + formatVersion (ARTIFACT_FORGE_API)),
+			getRelativeFile ("dist/" + formatVersion (ARTIFACT_STANDALONE)),
+			getRelativeFile ("dist/" + formatVersion (ARTIFACT_FORGE_STANDALONE)),
+			getRelativeFile ("dist/" + formatVersion (ARTIFACT_UNOPTIMIZED)),
+			getRelativeFile ("dist/" + formatVersion (ARTIFACT_FORGE_UNOPTIMIZED)));
+	}
 
-    private static synchronized String sha1(Path path) {
-        try {
-            if (SHA1_DIGEST == null) {
-                SHA1_DIGEST = MessageDigest.getInstance("SHA-1");
-            }
-            return DatatypeConverter.printHexBinary(SHA1_DIGEST.digest(Files.readAllBytes(path))).toLowerCase();
-        } catch (Exception e) {
-            // haha no thanks
-            throw new IllegalStateException(e);
-        }
-    }
+	// https://stackoverflow.com/a/9855338/9329945
+	private static final byte[] HEX_ARRAY = "0123456789ABCDEF".getBytes (StandardCharsets.US_ASCII);
+	public static String bytesToHex (byte[] bytes) {
+		byte[] hexChars = new byte[bytes.length * 2];
+		for (int j = 0; j < bytes.length; j++) {
+			int v               = bytes[j] & 0xFF;
+			hexChars[j * 2]     = HEX_ARRAY[v >>> 4];
+			hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
+		}
+		return new String (hexChars, StandardCharsets.UTF_8);
+	}
+
+	private static synchronized String sha1 (Path path) {
+		try {
+			if (SHA1_DIGEST == null) {
+				SHA1_DIGEST = MessageDigest.getInstance ("SHA-1");
+			}
+			return bytesToHex (SHA1_DIGEST.digest (Files.readAllBytes (path))).toLowerCase ();
+		} catch (Exception e) {
+			// haha no thanks
+			throw new IllegalStateException (e);
+		}
+	}
 }
