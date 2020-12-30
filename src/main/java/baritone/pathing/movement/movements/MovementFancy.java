@@ -58,7 +58,13 @@ public class MovementFancy extends Movement {
 		// Ticks to perform
 		public int ticks;
 		public ArrayList<BetterBlockPos> blocksPassedThroughOffset;
-		public boolean is45Strafe;
+		public boolean firstTickJump;
+		// Measured by 0.5 increments up to 20.0
+		public double approximateSpeedBefore;
+		public double speedAfter;
+		public double relativeAngle;
+		// Ignore strafe for now
+		// public boolean is45Strafe;
 		// TODO calculate distance based on first tick jump, movement speed
 		// going in, etc
 	}
@@ -95,22 +101,150 @@ public class MovementFancy extends Movement {
 	}
 
 	private static ArrayList<JumpCalculation> getJumpCalculations() {
-		public static int subdivisions             = 10;
-		public static double radians               = Math.PI * 2;
-		public static double increaseEachSubdivion = radians / subdivisions;
+		ArrayList<JumpCalculation> calculations = new ArrayList<>();
+		// https://www.mcpk.wiki/wiki/Tiers
+		private static double subdivisions          = 60.0;
+		private static double radians               = Math.PI * 2;
+		private static double increaseEachSubdivion = radians / subdivisions;
+		private static double subdivisionsSpeed     = 40.0;
+		private static int maxNumberOfTicks         = 68;
+		// 158400 total subdivisions, a lot of calculations
 		for(double angle = 0; angle <= radians;
 			angle += increaseEachSubdivion) {
-			// Number of ticks calculated is based on
-			// https://www.mcpk.wiki/wiki/Tiers Going for a 100 block fall for
-			// now, 68 ticks
-			for(int tick = 0; tick < 69; tick++) {
-				// Calculate for 45 degree strafe and not
+			for(double initialSpeed = 0; initialSpeed <= 20;
+				initialSpeed += (20 / subdivisionsSpeed)) {
+				for(int tick = 0; tick <= maxNumberOfTicks; tick++) {
+					// https://www.mcpk.wiki/w/index.php?title=Horizontal_Movement_Formulas
+					// With first tick
+					JumpCalculation calc1        = new JumpCalculation();
+					calc1.approximateSpeedBefore = initialSpeed;
+					calc1.firstTickJump          = true;
+					double speedAfter1  = jumpSpeed(initialSpeed, tick, true);
+					calc1.speedAfter    = speedAfter1;
+					calc1.ticks         = tick;
+					calc1.relativeAngle = angle;
+					double jumpDistance1
+						= jumpDistance(initialSpeed, tick, true);
+					double jumpFall1 = jumpHeight(tick);
+					double offsetX   = Math.sin(angle) * jumpDistance1;
+					double offsetZ   = Math.cos(angle) * jumpDistance1;
+					calc1.roundedX   = Math.floor(offsetX);
+					calc1.roundedZ   = Math.floor(offsetZ);
+					calc1.x          = offsetX;
+					calc1.y          = jumpFall1;
+					calc1.z          = offsetZ;
+					// The important part, use the player hitbox to get blocks
+					// passed through. Calculate for 16 points:
+					// *-*-*-*
+					// |     |  ^
+					// *     *  |
+					// |  X  | 0.6
+					// *     *  |
+					// |     |  v
+					// *-*-*-*
+					//<- 0.6 ->
+					private static double[][] pointsToRotate
+						= { { -0.3, 0.3 }, { -0.1, 0.3 }, { 0.1, 0.3 },
+							  { 0.3, 0.3 }, { 0.3, 0.1 }, { 0.3, -0.1 },
+							  { 0.3, -0.3 }, { 0.1, -0.3 }, { -0.1, -0.3 },
+							  { -0.3, -0.3 }, { -0.3, -0.1 }, { -0.3, 0.1 } };
+					private ArrayList<BetterBlockPos> positions
+						= new ArrayList<>();
+					for(double[] point : pointsToRotate) {
+						// https://gamedev.stackexchange.com/a/86784
+						// Rotate the point at this angle,
+						// square origin is at 0,0
+						double relativeX = point[0] * Math.cos(angle)
+										   - point[1] * Math.sin(angle);
+						double relativeY = point[0] * Math.sin(angle)
+										   + point[1] * Math.cos(angle);
+						// Correct for offset
+						double correctedX = offsetX + relativeX;
+						double correctedZ = offsetZ + relativeZ;
+						// Get blocks each point is in
+						BetterBlockPos blockAtThisPoint = new BetterBlockPos(
+							correctedX, jumpFall1, correctedZ);
+
+						if(!positions.contains(blockAtThisPoint)) {
+							positions.add(blockAtThisPoint);
+						}
+					}
+
+					// The positions the player is in at this tick of the jump
+					calc1.blocksPassedThroughOffset = positions;
+
+					// Without first tick
+					/*
+					JumpCalculation calc2        = new JumpCalculation();
+					calc2.approximateSpeedBefore = initialSpeed;
+					calc2.firstTickJump          = false;
+					double speedAfter2 = jumpSpeed(initialSpeed, tick, false);
+					calc2.speedAfter   = speedAfter2;
+					calc2.ticks        = tick;
+					*/
+				}
 			}
 		}
 	}
 
+	// Movement multiplier
+	private static double M = 1.274;
+	// Jump bonus
+	private static double J = 0.3274;
+
+	// https://www.mcpk.wiki/wiki/Nonrecursive_Movement_Formulas
+	private static double jumpDistance(double speed, int t, boolean firstTick) {
+		if(t < 2) {
+			return 0;
+		} else {
+			if(firstTick) {
+				return 1.91 * speed + J + ((0.02 * M) / 0.09) * (t - 2)
+					+ ((0.6 * Math.pow(0.91, 2)) / 0.09)
+						  * (1 - Math.pow(0.91, t - 2))
+						  * (speed + (J / 0.91)
+							  - ((0.02 * M) / (0.6 * 0.91 * 0.09)));
+			} else {
+				return 1.546 * speed + J + ((0.02 * M) / 0.09) * (t - 2)
+					+ ((0.6 * Math.pow(0.91, 2)) / 0.09)
+						  * (1 - Math.pow(0.91, t - 2))
+						  * (speed * 0.6 + (J / 0.91)
+							  - ((0.02 * M) / (0.6 * 0.91 * 0.09)));
+			}
+		}
+	}
+
+	private static double jumpSpeed(double speed, int t, boolean firstTick) {
+		if(t < 2) {
+			return speed;
+		} else {
+			if(firstTick) {
+				return ((0.02 * M) / (0.09))
+					+ 0.6 * Math.pow(0.91, t)
+						  * (speed + (J / 0.91)
+							  - ((0.02 * M) / 0.6 * 0.91 * 0.09));
+			} else {
+				return ((0.02 * M) / (0.09))
+					+ 0.6 * Math.pow(0.91, t)
+						  * (speed * 0.6 + (J / 0.91)
+							  - ((0.02 * M) / 0.6 * 0.91 * 0.09));
+			}
+		}
+	}
+
+	private static double jumpHeight(int t) {
+		if(t == 0)
+			return 0;
+		else
+			return 217 * (1 - Math.pow(0.98, t)) - 3.92 * t;
+	}
+
+	// TODO advanced formulas
+
 	private static ArrayList<JumpCalculation> jumpCalculations
 		= getJumpCalculations();
+
+	private static double playerWidth  = 0.6;
+	private static double playerHeight = 1.8;
 
 	private static final BetterBlockPos[] EMPTY = new BetterBlockPos[] {};
 
