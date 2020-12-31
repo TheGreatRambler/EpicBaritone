@@ -27,7 +27,9 @@ import baritone.pathing.movement.MovementHelper;
 import baritone.pathing.movement.MovementState;
 import baritone.utils.BlockStateInterface;
 import baritone.utils.pathing.MutableMoveResult;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -47,6 +49,16 @@ public class MovementFancy extends Movement {
 	// https://www.mcpk.wiki/wiki/SourceCode:EntityLivingBase
 	// https://www.mcpk.wiki/wiki/Vertical_Movement_Formulas
 
+	private static double angleSubdivisions = 60.0;
+	private static double speedSubdivisions = 40.0;
+
+	private static double maxAngle      = Math.PI * 2;
+	private static double maxSpeed      = 20.0;
+	private static int maxNumberOfTicks = 68;
+
+	private static double angleIncrease = maxAngle / angleSubdivisions;
+	private static double speedIncrease = maxSpeed / speedSubdivisions;
+
 	private class JumpCalculation {
 		// Rounded values for A star
 		public int roundedX;
@@ -56,8 +68,9 @@ public class MovementFancy extends Movement {
 		public int y;
 		public int z;
 		// Ticks to perform
-		public int ticks;
-		public ArrayList<BetterBlockPos> blocksPassedThroughOffset;
+		public int tick;
+		// Calculated later
+		// public ArrayList<BetterBlockPos> blocksPassedThroughOffset;
 		public boolean firstTickJump;
 		// Measured by 0.5 increments up to 20.0
 		public double approximateSpeedBefore;
@@ -69,122 +82,81 @@ public class MovementFancy extends Movement {
 		// going in, etc
 	}
 
-	private enum JumpBonuses {
-		SprintJump(0.3274);
-		StrafedSprintJump(0.291924);
+	public class AngleAndSpeed {
+		public double angle;
+		public double speed;
 
-		private final double value;
-
-		JumpBonuses(final double newValue) {
-			value = newValue;
+		public AngleAndSpeed(double angle_, double speed_) {
+			angle = angle_;
+			speed = speed_;
 		}
 
-		public double getValue() {
-			return value;
-		}
-	}
-
-	// Attempt to strafe whenever possible
-	private enum MovementMultipliers {
-		Sprint45Degree(1.3);
-		NormalSprint(1.274);
-
-		private final double value;
-
-		MovementMultipliers(final double newValue) {
-			value = newValue;
+		@Override
+		public boolean equals(AngleAndSpeed o) {
+			return o.angle == angle && o.speed == speed;
 		}
 
-		public double getValue() {
-			return value;
+		@Override
+		public int hashCode() {
+			return Objects.hash(angle, speed);
 		}
 	}
 
-	private static ArrayList<JumpCalculation> getJumpCalculations() {
+	private static void getJumpCalculations() {
+		// Obtain the lookup tables statically
 		ArrayList<JumpCalculation> calculations = new ArrayList<>();
+		HashMap<AngleAndSpeed, JumpCalculation[]> calcsFirstTick
+			= new HashMap<>();
+		HashMap<AngleAndSpeed, JumpCalculation[]> calcsNotFirstTick
+			= new HashMap<>();
 		// https://www.mcpk.wiki/wiki/Tiers
-		private static double subdivisions          = 60.0;
-		private static double radians               = Math.PI * 2;
-		private static double increaseEachSubdivion = radians / subdivisions;
-		private static double subdivisionsSpeed     = 40.0;
-		private static int maxNumberOfTicks         = 68;
-		// 158400 total subdivisions, a lot of calculations
-		for(double angle = 0; angle <= radians;
-			angle += increaseEachSubdivion) {
-			for(double initialSpeed = 0; initialSpeed <= 20;
-				initialSpeed += (20 / subdivisionsSpeed)) {
-				for(int tick = 0; tick <= maxNumberOfTicks; tick++) {
-					// https://www.mcpk.wiki/w/index.php?title=Horizontal_Movement_Formulas
-					// With first tick
-					JumpCalculation calc1        = new JumpCalculation();
-					calc1.approximateSpeedBefore = initialSpeed;
-					calc1.firstTickJump          = true;
-					double speedAfter1  = jumpSpeed(initialSpeed, tick, true);
-					calc1.speedAfter    = speedAfter1;
-					calc1.ticks         = tick;
-					calc1.relativeAngle = angle;
-					double jumpDistance1
-						= jumpDistance(initialSpeed, tick, true);
-					double jumpFall1 = jumpHeight(tick);
-					double offsetX   = Math.sin(angle) * jumpDistance1;
-					double offsetZ   = Math.cos(angle) * jumpDistance1;
-					calc1.roundedX   = Math.floor(offsetX);
-					calc1.roundedZ   = Math.floor(offsetZ);
-					calc1.x          = offsetX;
-					calc1.y          = jumpFall1;
-					calc1.z          = offsetZ;
-					// The important part, use the player hitbox to get blocks
-					// passed through. Calculate for 16 points:
-					// *-*-*-*
-					// |     |  ^
-					// *     *  |
-					// |  X  | 0.6
-					// *     *  |
-					// |     |  v
-					// *-*-*-*
-					//<- 0.6 ->
-					private static double[][] pointsToRotate
-						= { { -0.3, 0.3 }, { -0.1, 0.3 }, { 0.1, 0.3 },
-							  { 0.3, 0.3 }, { 0.3, 0.1 }, { 0.3, -0.1 },
-							  { 0.3, -0.3 }, { 0.1, -0.3 }, { -0.1, -0.3 },
-							  { -0.3, -0.3 }, { -0.3, -0.1 }, { -0.3, 0.1 } };
-					private ArrayList<BetterBlockPos> positions
-						= new ArrayList<>();
-					for(double[] point : pointsToRotate) {
-						// https://gamedev.stackexchange.com/a/86784
-						// Rotate the point at this angle,
-						// square origin is at 0,0
-						double relativeX = point[0] * Math.cos(angle)
-										   - point[1] * Math.sin(angle);
-						double relativeY = point[0] * Math.sin(angle)
-										   + point[1] * Math.cos(angle);
-						// Correct for offset
-						double correctedX = offsetX + relativeX;
-						double correctedZ = offsetZ + relativeZ;
-						// Get blocks each point is in
-						BetterBlockPos blockAtThisPoint = new BetterBlockPos(
-							correctedX, jumpFall1, correctedZ);
 
-						if(!positions.contains(blockAtThisPoint)) {
-							positions.add(blockAtThisPoint);
-						}
+		// 158400 total subdivisions, a lot of calculations
+		for(double angle = 0; angle < maxAngle; angle += angleIncrease) {
+			for(double initialSpeed = 0; initialSpeed < maxSpeed;
+				initialSpeed += speedIncrease) {
+				for(boolean isFirstTick : Boolean[] { true, false }) {
+					AngleAndSpeed angleAndSpeed
+						= new AngleAndSpeed(angle, initialSpeed);
+					JumpCalculation[] tickCalculations
+						= new JumpCalculation[maxNumberOfTicks];
+
+					for(int tick = 0; tick <= maxNumberOfTicks; tick++) {
+						// https://www.mcpk.wiki/w/index.php?title=Horizontal_Movement_Formulas
+						JumpCalculation calc = new JumpCalculation();
+						calc.relativeSpeed   = initialSpeed;
+						calc.firstTickJump   = isFirstTick;
+						double speedAfter
+							= jumpSpeed(initialSpeed, tick, isFirstTick);
+						calc.speedAfter    = speedAfter;
+						calc.tick          = tick;
+						calc.relativeAngle = angle;
+						double jumpDistance
+							= jumpDistance(initialSpeed, tick, isFirstTick);
+						double jumpFall1   = jumpHeight(tick);
+						double offsetX     = Math.sin(angle) * jumpDistance;
+						double offsetZ     = Math.cos(angle) * jumpDistance;
+						calc.roundedX      = Math.floor(offsetX);
+						calc.roundedZ      = Math.floor(offsetZ);
+						calc.x             = offsetX;
+						calc.y             = jumpFall1;
+						calc.z             = offsetZ;
+						calc.relativeAngle = angle;
+
+						tickCalculations[calc.tick] = calc;
 					}
 
-					// The positions the player is in at this tick of the jump
-					calc1.blocksPassedThroughOffset = positions;
-
-					// Without first tick
-					/*
-					JumpCalculation calc2        = new JumpCalculation();
-					calc2.approximateSpeedBefore = initialSpeed;
-					calc2.firstTickJump          = false;
-					double speedAfter2 = jumpSpeed(initialSpeed, tick, false);
-					calc2.speedAfter   = speedAfter2;
-					calc2.ticks        = tick;
-					*/
+					isFirstTick
+						? calcsFirstTick.put(angleAndSpeed, tickCalculations)
+						: calcsNotFirstTick.put(
+							angleAndSpeed, tickCalculations);
 				}
 			}
 		}
+
+		allJumpCalculations                  = calculations;
+		jumpCalculationsSpecificFirstTick    = calcsFirstTick;
+		jumpCalculationsSpecificNotFirstTick = calcsNotFirstTick;
 	}
 
 	// Movement multiplier
@@ -238,10 +210,99 @@ public class MovementFancy extends Movement {
 			return 217 * (1 - Math.pow(0.98, t)) - 3.92 * t;
 	}
 
-	// TODO advanced formulas
+	public static ArrayList<BetterBlockPos> getPlayerBlockPosition(
+		int playerFeetOffset, double x, double y, double z, double angle,
+		double jumpDistance, double fallDistance) {
+		double offsetX = Math.sin(angle) * jumpDistance1;
+		double offsetZ = Math.cos(angle) * jumpDistance;
+		// Use the player hitbox to get blocks
+		// passed through. Calculate for 16 points:
+		// *-*-*-*
+		// |     |  ^
+		// *     *  |
+		// |  X  | 0.6
+		// *     *  |
+		// |     |  v
+		// *-*-*-*
+		//<- 0.6 ->
 
-	private static ArrayList<JumpCalculation> jumpCalculations
-		= getJumpCalculations();
+		// To use this function to determine if the blocks in front of the feet
+		// are empty (optimal sprint jumping will leave space just before
+		// another jump), just use this function but add 1 to jumpDistance
+
+		// The uses of this function:
+		// - All of [playerFeetOffset=(0,1,2*),jumpDistance+=0] must be empty
+		// - One of [playerFeetOffset=(-1)] must be solid
+		// - All of [playerFeetOffset=(0,1,2*),jumpDistance+=1] should be empty
+
+		// * If the decimal of y is greater than 0.2, playerFeetOffset must also
+		// check for playerFeetOffset=2 (player can be within 3 blocks
+		// vertically)
+
+		static double[][] pointsToRotate    = { { -0.3, 0.3 }, { -0.1, 0.3 },
+            { 0.1, 0.3 }, { 0.3, 0.3 }, { 0.3, 0.1 }, { 0.3, -0.1 },
+            { 0.3, -0.3 }, { 0.1, -0.3 }, { -0.1, -0.3 }, { -0.3, -0.3 },
+            { -0.3, -0.1 }, { -0.3, 0.1 } };
+		ArrayList<BetterBlockPos> positions = new ArrayList<>();
+		for(double[] point : pointsToRotate) {
+			// https://gamedev.stackexchange.com/a/86784
+			// Rotate the point at this angle,
+			// square origin is at 0,0
+			double relativeX
+				= point[0] * Math.cos(angle) - point[1] * Math.sin(angle);
+			double relativeY
+				= point[0] * Math.sin(angle) + point[1] * Math.cos(angle);
+			// Correct for offset
+			double correctedX = offsetX + relativeX + x;
+			double correctedZ = offsetZ + relativeZ + z;
+
+			BetterBlockPos blockAtThisPoint = new BetterBlockPos(
+				correctedX, y + fallDistance + playerFeetOffset, correctedZ);
+
+			if(!positions.contains(blockAtThisPoint)) {
+				positions.add(blockAtThisPoint);
+			}
+		}
+
+		return positions;
+	}
+
+	private static ArrayList<JumpCalculation> allJumpCalculations;
+	private static HashMap<AngleAndSpeed, JumpCalculation[]>
+		jumpCalculationsSpecificFirstTick;
+	private static HashMap<AngleAndSpeed, JumpCalculation[]>
+		jumpCalculationsSpecificNotFirstTick;
+
+	static {
+		// Obtain these lookup tables statically
+		getJumpCalculations();
+	}
+
+	public ArrayList<JumpCalculation[]> getJumpCalculations(double x, double y,
+		double z, double angle, double speed, boolean firstTick) {
+		// Using the current location, angle and speed of the player, find the
+		// possible jumps (and every tick of those possible jumps)
+		// Every returned calculation is an approximation
+		angle = Math.floor(angle / angleIncrease) * angleIncrease;
+		ArrayList<JumpCalculation[]> calcs = new ArrayList<>();
+		// Will loop exactly as many as angleSubdivisions
+		for(double angleOffset = 0; angleOffset < maxAngle;
+			angleOffset += angleIncrease) {
+			// Make sure angle is in [0,maxAngle) range
+			double adjustedAngle = (angle + angleOffset) % maxAngle;
+			double adjustedSpeed = Math.cos(angleOffset) * speed;
+			// Round out the speed as well
+			adjustedSpeed
+				= Math.floor(adjustedSpeed / speedIncrease) * speedIncrease;
+			AngleAndSpeed angleAndSpeed
+				= new AngleAndSpeed(adjustedAngle, adjustedSpeed);
+			JumpCalculation[] calc
+				= firstTick
+					  ? jumpCalculationsSpecificFirstTick.get(angleAndSpeed)
+					  : jumpCalculationsSpecificNotFirstTick.get(angleAndSpeed);
+			calcs.add(calc);
+		}
+	}
 
 	private static double playerWidth  = 0.6;
 	private static double playerHeight = 1.8;
