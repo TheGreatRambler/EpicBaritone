@@ -65,8 +65,8 @@ public class MovementFancy extends Movement {
 		public int roundedZ;
 		// Actual values
 		public double x;
-		public int y;
-		public int z;
+		public double y;
+		public double z;
 		// Ticks to perform
 		public int tick;
 		// Calculated later
@@ -76,13 +76,15 @@ public class MovementFancy extends Movement {
 		public double approximateSpeedBefore;
 		public double speedAfter;
 		public double relativeAngle;
+		public double[] hitboxX;
+		public double[] hitboxZ;
 		// Ignore strafe for now
 		// public boolean is45Strafe;
 		// TODO calculate distance based on first tick jump, movement speed
 		// going in, etc
 	}
 
-	public class AngleAndSpeed {
+	private class AngleAndSpeed {
 		public double angle;
 		public double speed;
 
@@ -100,6 +102,15 @@ public class MovementFancy extends Movement {
 		public int hashCode() {
 			return Objects.hash(angle, speed);
 		}
+	}
+
+	private class Jump {
+		public double angle;
+		public BetterBlockPos endingPosition;
+		public double fallHeight;
+		public double realX;
+		public double realZ;
+		public double cost;
 	}
 
 	private static void getJumpCalculations() {
@@ -143,13 +154,68 @@ public class MovementFancy extends Movement {
 						calc.z             = offsetZ;
 						calc.relativeAngle = angle;
 
+						calc.hitboxX = new double[12];
+						calc.hitboxZ = new double[12];
+
+						// Use the player hitbox to get blocks
+						// passed through. Calculate for 16 points:
+						// *-*-*-*
+						// |     |  ^
+						// *     *  |
+						// |  X  | 0.6
+						// *     *  |
+						// |     |  v
+						// *-*-*-*
+						//<- 0.6 ->
+
+						// To use this function to determine if the blocks in
+						// front of the feet are empty (optimal sprint jumping
+						// will leave space just before another jump), just use
+						// this function but add 1 to jumpDistance
+
+						// The uses of this function:
+						// - All of [playerFeetOffset=(0,1,2*),jumpDistance+=0]
+						// must be empty
+						// - One of [playerFeetOffset=(-1)] must be solid
+						// - All of [playerFeetOffset=(0,1,2*),jumpDistance+=1]
+						// should be empty
+
+						// * If the decimal of y is greater than 0.2,
+						// playerFeetOffset must also check for
+						// playerFeetOffset=2 (player can be within 3 blocks
+						// vertically)
+
+						int pointIndex                   = 0;
+						static double[][] pointsToRotate = { { -0.3, 0.3 },
+							{ -0.1, 0.3 }, { 0.1, 0.3 }, { 0.3, 0.3 },
+							{ 0.3, 0.1 }, { 0.3, -0.1 }, { 0.3, -0.3 },
+							{ 0.1, -0.3 }, { -0.1, -0.3 }, { -0.3, -0.3 },
+							{ -0.3, -0.1 }, { -0.3, 0.1 } };
+						for(double[] point : pointsToRotate) {
+							// https://gamedev.stackexchange.com/a/86784
+							// Rotate the point at this angle,
+							// square origin is at 0,0
+							double relativeX = point[0] * Math.cos(angle)
+											   - point[1] * Math.sin(angle);
+							double relativeY = point[0] * Math.sin(angle)
+											   + point[1] * Math.cos(angle);
+							// Correct for offset
+							double correctedX = offsetX + relativeX;
+							double correctedZ = offsetZ + relativeZ;
+
+							calc.hitboxX[index] = correctedX;
+							calc.hitboxZ[index] = correctedZ;
+
+							pointIndex++;
+						}
+
 						tickCalculations[calc.tick] = calc;
 					}
 
 					isFirstTick
 						? calcsFirstTick.put(angleAndSpeed, tickCalculations)
 						: calcsNotFirstTick.put(
-							  angleAndSpeed, tickCalculations);
+							angleAndSpeed, tickCalculations);
 				}
 			}
 		}
@@ -174,13 +240,13 @@ public class MovementFancy extends Movement {
 					+ ((0.6 * Math.pow(0.91, 2)) / 0.09)
 						  * (1 - Math.pow(0.91, t - 2))
 						  * (speed + (J / 0.91)
-								- ((0.02 * M) / (0.6 * 0.91 * 0.09)));
+							  - ((0.02 * M) / (0.6 * 0.91 * 0.09)));
 			} else {
 				return 1.546 * speed + J + ((0.02 * M) / 0.09) * (t - 2)
 					+ ((0.6 * Math.pow(0.91, 2)) / 0.09)
 						  * (1 - Math.pow(0.91, t - 2))
 						  * (speed * 0.6 + (J / 0.91)
-								- ((0.02 * M) / (0.6 * 0.91 * 0.09)));
+							  - ((0.02 * M) / (0.6 * 0.91 * 0.09)));
 			}
 		}
 	}
@@ -193,12 +259,12 @@ public class MovementFancy extends Movement {
 				return ((0.02 * M) / (0.09))
 					+ 0.6 * Math.pow(0.91, t)
 						  * (speed + (J / 0.91)
-								- ((0.02 * M) / 0.6 * 0.91 * 0.09));
+							  - ((0.02 * M) / 0.6 * 0.91 * 0.09));
 			} else {
 				return ((0.02 * M) / (0.09))
 					+ 0.6 * Math.pow(0.91, t)
 						  * (speed * 0.6 + (J / 0.91)
-								- ((0.02 * M) / 0.6 * 0.91 * 0.09));
+							  - ((0.02 * M) / 0.6 * 0.91 * 0.09));
 			}
 		}
 	}
@@ -211,53 +277,14 @@ public class MovementFancy extends Movement {
 	}
 
 	public static ArrayList<BetterBlockPos> getPlayerBlockPosition(
-		int playerFeetOffset, double x, double y, double z, double angle,
-		double jumpDistance, double fallDistance) {
-		double offsetX = Math.sin(angle) * jumpDistance1;
-		double offsetZ = Math.cos(angle) * jumpDistance;
-		// Use the player hitbox to get blocks
-		// passed through. Calculate for 16 points:
-		// *-*-*-*
-		// |     |  ^
-		// *     *  |
-		// |  X  | 0.6
-		// *     *  |
-		// |     |  v
-		// *-*-*-*
-		//<- 0.6 ->
+		JumpCalculation calc, double playerX, double playerY, double playerZ,
+		double playerFeetOffset) {
 
-		// To use this function to determine if the blocks in front of the feet
-		// are empty (optimal sprint jumping will leave space just before
-		// another jump), just use this function but add 1 to jumpDistance
-
-		// The uses of this function:
-		// - All of [playerFeetOffset=(0,1,2*),jumpDistance+=0] must be empty
-		// - One of [playerFeetOffset=(-1)] must be solid
-		// - All of [playerFeetOffset=(0,1,2*),jumpDistance+=1] should be empty
-
-		// * If the decimal of y is greater than 0.2, playerFeetOffset must also
-		// check for playerFeetOffset=2 (player can be within 3 blocks
-		// vertically)
-
-		static double[][] pointsToRotate    = { { -0.3, 0.3 }, { -0.1, 0.3 },
-            { 0.1, 0.3 }, { 0.3, 0.3 }, { 0.3, 0.1 }, { 0.3, -0.1 },
-            { 0.3, -0.3 }, { 0.1, -0.3 }, { -0.1, -0.3 }, { -0.3, -0.3 },
-            { -0.3, -0.1 }, { -0.3, 0.1 } };
 		ArrayList<BetterBlockPos> positions = new ArrayList<>();
-		for(double[] point : pointsToRotate) {
-			// https://gamedev.stackexchange.com/a/86784
-			// Rotate the point at this angle,
-			// square origin is at 0,0
-			double relativeX
-				= point[0] * Math.cos(angle) - point[1] * Math.sin(angle);
-			double relativeY
-				= point[0] * Math.sin(angle) + point[1] * Math.cos(angle);
-			// Correct for offset
-			double correctedX = offsetX + relativeX + x;
-			double correctedZ = offsetZ + relativeZ + z;
-
+		for(int i = 0; i < calc.hitboxX.size; i++) {
 			BetterBlockPos blockAtThisPoint = new BetterBlockPos(
-				correctedX, y + fallDistance + playerFeetOffset, correctedZ);
+				calc.hitboxX[i] + playerX, playerY + calc.y + playerFeetOffset,
+				calc.hitboxZ[i] + playerZ);
 
 			if(!positions.contains(blockAtThisPoint)) {
 				positions.add(blockAtThisPoint);
@@ -304,10 +331,248 @@ public class MovementFancy extends Movement {
 		}
 	}
 
-	public ArrayList<double> getCosts(
-		ArrayList<JumpCalculation[]> jumpCalculations) {
-		ArrayList<double> costsArray = new ArrayList<>();
+	public ArrayList<Jump> getCosts(CalculationContext context, double x,
+		double y, double z, ArrayList<JumpCalculation[]> jumpCalculations) {
+		ArrayList<Jump> costsArray = new ArrayList<>();
+		// Check for headhitter jump, as it is only 2 frames
+		double lastY               = 0;
+		int currentTick            = 0;
+		static double playerHeight = 1.8;
 		for(JumpCalculation tickCalculation : jumpCalculations) {
+			// 0th tick is unimportant
+			if(currentTick == 0) {
+				currentTick++;
+				continue;
+			}
+
+			boolean isDescending = false;
+			if(lastY > tickCalculation.y) {
+				// Descending now
+				isDescending = true;
+			}
+
+			double playerX = x + tickCalculation.x;
+			double playerY = y + tickCalculation.y;
+			double playerZ = z + tickCalculation.z;
+
+			if(isDescending) {
+				// Check all non ground tiles, as they have to be empty for the
+				// player to pass through them
+				boolean allEmpty
+					= getPlayerBlockPosition(
+						  tickCalculation, playerX, playerY, playerZ, 1.0)
+						  .stream()
+						  .allMatch(pos
+							  -> MovementHelper.fullyPassable(
+								  context, pos.x, pos.y, pos.z))
+					  && getPlayerBlockPosition(tickCalculation, playerX,
+						  playerY, playerZ, playerHeight)
+							 .stream()
+							 .allMatch(pos
+								 -> MovementHelper.fullyPassable(
+									 context, pos.x, pos.y, pos.z));
+				if(allEmpty) {
+					// Get ground tiles
+					Stream<BetterBlockPos> groundBlocks
+						= getPlayerBlockPosition(
+							tickCalculation, playerX, playerY, playerZ, 0.0)
+							  .stream();
+					// Check if the ground has arrived
+					if(Math.ceil(playerY) != Math.ceil(playerY)) {
+						// Check if any can be landed on
+						if(groundBlocks.anyMatch(pos
+							   -> MovementHelper.canWalkOn(
+								   context, pos.x, pos.y, pos.z))) {
+							// This is a possible spot, but break from here
+							Jump jump = new Jump();
+
+							break;
+						} else {
+							boolean canPlaceABlock = groundBlocks.anyMatch(pos
+								-> {
+								for(int i = 0; i < 5; i++) {
+									int againstX
+										= pos.x
+										  + HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP
+												[i]
+													.getXOffset();
+									int againstY
+										= pos.y
+										  + HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP
+												[i]
+													.getYOffset();
+									int againstZ
+										= pos.z
+										  + HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP
+												[i]
+													.getZOffset();
+									// if(againstX == x + xDiff * 3
+									//	&& againstZ
+									//		   == z + zDiff * 3) { // we can't
+									//							   // turn
+									//							   // around
+									//							   // that fast
+									//	return false;
+									//}
+									if(MovementHelper.canPlaceAgainst(
+										   context.bsi, againstX, againstY,
+										   againstZ)) {
+										return true;
+									}
+								}
+							});
+
+							// Check if any block can be placed to recover the
+							// player
+							if(canPlaceABlock) {
+								// Block can be placed. Won't break, as the
+								// player can choose not to place blocks and
+								// continue falling instead
+								Jump jump = new Jump();
+							}
+						}
+					} else {
+						// Check just in case
+						// Player may drift into next block
+						if(!groundBlocks.allMatch(pos
+							   -> MovementHelper.fullyPassable(
+								   context, pos.x, pos.y, pos.z))) {
+							// Impossible to calculate from
+							// here, break execution
+							break;
+						}
+					}
+				} else {
+					// Impossible to calculate from here, break execution
+					break;
+				}
+			} else {
+				// Check all blocks that should be air
+				boolean allEmpty
+					= getPlayerBlockPosition(
+						  tickCalculation, playerX, playerY, playerZ, 0.0)
+						  .stream()
+						  .allMatch(pos
+							  -> MovementHelper.fullyPassable(
+								  context, pos.x, pos.y, pos.z))
+					  && getPlayerBlockPosition(
+						  tickCalculation, playerX, playerY, playerZ, 1.0)
+							 .stream()
+							 .allMatch(pos
+								 -> MovementHelper.fullyPassable(
+									 context, pos.x, pos.y, pos.z));
+				if(allEmpty) {
+					// Check head blocks for headhitters
+					Stream<BetterBlockPos> headhitterLocations
+						= getPlayerBlockPosition(tickCalculation, playerX,
+							playerY, playerZ, playerHeight)
+							  .stream();
+					if(currentTick == 1) {
+						// Headhitters can only be used on frame 2
+						// For 2 block ceilings
+						// Entire jump is 2 frames long
+						double nextFrameX = x + jumpCalculations[2].x;
+						double nextFrameZ = z + jumpCalculations[2].z;
+						boolean allEmptyNextFrame
+							= getPlayerBlockPosition(tickCalculation,
+								  nextFrameX, y, nextFrameZ, 1.0)
+								  .stream()
+								  .allMatch(pos
+									  -> MovementHelper.fullyPassable(
+										  context, pos.x, pos.y, pos.z))
+							  && getPlayerBlockPosition(tickCalculation,
+								  nextFrameX, y, nextFrameZ, playerHeight)
+									 .stream()
+									 .allMatch(pos
+										 -> MovementHelper.fullyPassable(
+											 context, pos.x, pos.y, pos.z));
+						if(allEmptyNextFrame) {
+							// Get ground tiles
+							Stream<BetterBlockPos> groundBlocks
+								= getPlayerBlockPosition(tickCalculation,
+									nextFrameX, y, nextFrameZ, 0.0)
+									  .stream();
+							// Check if any can be landed on
+							if(groundBlocks.anyMatch(pos
+								   -> MovementHelper.canWalkOn(
+									   context, pos.x, pos.y, pos.z))) {
+								// This is a possible spot, but break from here
+								Jump jump = new Jump();
+
+								break;
+							} else {
+								boolean canPlaceABlock = groundBlocks.anyMatch(pos
+									-> {
+									for(int i = 0; i < 5; i++) {
+										int againstX
+											= pos.x
+											  + HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP
+													[i]
+														.getXOffset();
+										int againstY
+											= pos.y
+											  + HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP
+													[i]
+														.getYOffset();
+										int againstZ
+											= pos.z
+											  + HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP
+													[i]
+														.getZOffset();
+										// if(againstX == x + xDiff * 3
+										//	&& againstZ
+										//		   == z + zDiff * 3) { // we
+										//							   // can't
+										//							   // turn
+										//							   // around
+										//							   // that
+										//							   // fast
+										//	return false;
+										//}
+										if(MovementHelper.canPlaceAgainst(
+											   context.bsi, againstX, againstY,
+											   againstZ)) {
+											return true;
+										}
+									}
+								});
+
+								// Check if any block can be placed to recover
+								// the player
+								if(canPlaceABlock) {
+									// Block can be placed
+									// Technically can keep calculating from
+									// here, but I don't want to bother
+									// calculating falling after hitting a block
+									// on the head
+									Jump jump = new Jump();
+
+									break;
+								}
+							}
+						} else {
+							// Since next frame wont work, cancel
+							break;
+						}
+
+					} else {
+						// Headhitters CAN be used other frames, but I'm not
+						// smart enough to figure it out
+						if(!headhitterLocations.allMatch(pos
+							   -> MovementHelper.fullyPassable(
+								   context, pos.x, pos.y, pos.z))) {
+							// These blocks being solid any other time is
+							// useless to us
+							break;
+						}
+					}
+				} else {
+					// Impossible to calculate from here, break execution
+					break;
+				}
+			}
+
+			currentTick++;
 		}
 	}
 
@@ -367,7 +632,7 @@ public class MovementFancy extends Movement {
 		}
 		if(MovementHelper.avoidWalkingInto(adj)
 			&& !(adj.getFluidState().getFluid()
-					   instanceof WaterFluid)) { // magma sucks
+					 instanceof WaterFluid)) { // magma sucks
 			return;
 		}
 		if(!MovementHelper.fullyPassable(
@@ -415,9 +680,9 @@ public class MovementFancy extends Movement {
 				   destInto)) {
 				if(i <= 3 && context.allowParkourAscend && context.canSprint
 					&& MovementHelper.canWalkOn(
-						   context.bsi, destX, y, destZ, destInto)
+						context.bsi, destX, y, destZ, destInto)
 					&& checkOvershootSafety(
-						   context.bsi, destX + xDiff, y + 1, destZ + zDiff)) {
+						context.bsi, destX + xDiff, y + 1, destZ + zDiff)) {
 					res.x    = destX;
 					res.y    = y + 1;
 					res.z    = destZ;
@@ -431,7 +696,7 @@ public class MovementFancy extends Movement {
 			// farmland haha
 			if(landingOn.getBlock() != Blocks.FARMLAND
 				&& MovementHelper.canWalkOn(
-					   context.bsi, destX, y - 1, destZ, landingOn)) {
+					context.bsi, destX, y - 1, destZ, landingOn)) {
 				if(checkOvershootSafety(
 					   context.bsi, destX + xDiff, y, destZ + zDiff)) {
 					res.x = destX;

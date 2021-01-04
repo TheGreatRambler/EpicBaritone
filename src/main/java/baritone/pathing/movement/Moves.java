@@ -368,6 +368,7 @@ public enum Moves {
 		}
 	};
 
+	/*
 	// Every possible sprint jump (fancy move) location
 	JUMP_SOUTH(0, +1, +1) {
 		@Override
@@ -380,10 +381,9 @@ public enum Moves {
 		public double cost(CalculationContext context, int x, int y, int z) {
 			return MovementJump.cost(context, x, y, z, x, z + 1);
 		}
-	}
-	,
+	},
 
-		JUMP_EAST(+1, +1, 0) {
+	JUMP_EAST(+1, +1, 0) {
 		@Override
 		public Movement apply0(CalculationContext context, BetterBlockPos src) {
 			return new MovementJump(context.getBaritone(), src,
@@ -394,10 +394,9 @@ public enum Moves {
 		public double cost(CalculationContext context, int x, int y, int z) {
 			return MovementJump.cost(context, x, y, z, x + 1, z);
 		}
-	}
-	,
+	},
 
-		JUMP_WEST(-1, +1, 0) {
+	JUMP_WEST(-1, +1, 0) {
 		@Override
 		public Movement apply0(CalculationContext context, BetterBlockPos src) {
 			return new MovementJump(context.getBaritone(), src,
@@ -408,10 +407,10 @@ public enum Moves {
 		public double cost(CalculationContext context, int x, int y, int z) {
 			return MovementJump.cost(context, x, y, z, x - 1, z);
 		}
-	}
-	,
+	},
+*/
 
-		public final boolean dynamicXZ;
+	public final boolean dynamicXZ;
 	public final boolean dynamicY;
 
 	public final int xOffset;

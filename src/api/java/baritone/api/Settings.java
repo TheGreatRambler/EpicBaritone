@@ -262,12 +262,6 @@ public final class Settings {
 	public final Setting<Boolean> sprintJumps = new Setting<>(true);
 
 	/**
-	 * Sprint under 2 block tall gaps whenever possible, creating the 2 block
-	 * tall gaps when it is allowed to
-	 */
-	public final Setting<Boolean> sprintJumps2BlockTall = new Setting<>(true);
-
-	/**
 	 * If we overshoot a traverse and end up one block beyond the destination,
 	 * mark it as successful anyway. <p> This helps with speed exceeding 20m/s
 	 */

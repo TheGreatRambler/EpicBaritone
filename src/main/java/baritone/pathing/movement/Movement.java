@@ -25,19 +25,25 @@ import baritone.api.utils.*;
 import baritone.api.utils.input.Input;
 import baritone.behavior.PathingBehavior;
 import baritone.utils.BlockStateInterface;
+import java.util.*;
 import net.minecraft.entity.item.FallingBlockEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.*;
-
 public abstract class Movement implements IMovement, MovementHelper {
 
+	// For placing below
 	public static final
 		Direction[] HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP
 		= { Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST,
 			  Direction.DOWN };
+
+	// For placing above
+	public static final
+		Direction[] HORIZONTALS_BUT_ALSO_UP_____SO_EVERY_DIRECTION_EXCEPT_DOWN
+		= { Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST,
+			  Direction.UP };
 
 	protected final IBaritone baritone;
 	protected final IPlayerContext ctx;
@@ -120,8 +126,7 @@ public abstract class Movement implements IMovement, MovementHelper {
 	protected boolean playerInValidPosition() {
 		return getValidPositions().contains(ctx.playerFeet())
 			|| getValidPositions().contains(
-				   ((PathingBehavior)baritone.getPathingBehavior())
-					   .pathStart());
+				((PathingBehavior)baritone.getPathingBehavior()).pathStart());
 	}
 
 	/**
@@ -191,7 +196,7 @@ public abstract class Movement implements IMovement, MovementHelper {
 						rotTowardsBlock, true));
 					if(ctx.isLookingAt(blockPos)
 						|| ctx.playerRotations().isReallyCloseTo(
-							   rotTowardsBlock)) {
+							rotTowardsBlock)) {
 						state.setInput(Input.CLICK_LEFT, true);
 					}
 					return false;
@@ -309,8 +314,8 @@ public abstract class Movement implements IMovement, MovementHelper {
 		}
 		List<BlockPos> result = new ArrayList<>();
 		if(positionToPlace != null
-			&& !MovementHelper.canWalkOn(bsi, positionToPlace.x,
-				   positionToPlace.y, positionToPlace.z)) {
+			&& !MovementHelper.canWalkOn(
+				bsi, positionToPlace.x, positionToPlace.y, positionToPlace.z)) {
 			result.add(positionToPlace);
 		}
 		toPlaceCached = result;

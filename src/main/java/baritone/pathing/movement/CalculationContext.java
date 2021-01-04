@@ -17,6 +17,8 @@
 
 package baritone.pathing.movement;
 
+import static baritone.api.pathing.movement.ActionCosts.COST_INF;
+
 import baritone.Baritone;
 import baritone.api.IBaritone;
 import baritone.api.pathing.movement.ActionCosts;
@@ -34,8 +36,6 @@ import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.World;
-
-import static baritone.api.pathing.movement.ActionCosts.COST_INF;
 
 /**
  * @author Brady
@@ -63,7 +63,6 @@ public class CalculationContext {
 	public final boolean allowJumpAt256;
 	public final boolean allowParkourAscend;
 	public final boolean allowSprintJumps;
-	public final boolean allowSprintJumps2Block;
 	public final boolean assumeWalkOnWater;
 	public final boolean allowDiagonalDescend;
 	public final boolean allowDiagonalAscend;
@@ -99,17 +98,15 @@ public class CalculationContext {
 		this.hasWaterBucket
 			= Baritone.settings().allowWaterBucketFall.value
 			  && PlayerInventory.isHotbar(
-					 player.inventory.getSlotFor(STACK_BUCKET_WATER))
+				  player.inventory.getSlotFor(STACK_BUCKET_WATER))
 			  && world.func_234922_V_() != DimensionType.THE_NETHER;
 		this.canSprint = Baritone.settings().allowSprint.value
 						 && player.getFoodStats().getFoodLevel() > 6;
 		this.placeBlockCost = Baritone.settings().blockPlacementPenalty.value;
 		this.allowBreak     = Baritone.settings().allowBreak.value;
 		this.allowParkour   = Baritone.settings().allowParkour.value;
-		this.allowParkourPlace = Baritone.settings().allowParkourPlace.value;
-		this.allowSprintJumps  = Baritone.settings().sprintJumps.value;
-		this.allowSprintJumps2Block
-			= Baritone.settings().sprintJumps2BlockTall.value;
+		this.allowParkourPlace  = Baritone.settings().allowParkourPlace.value;
+		this.allowSprintJumps   = Baritone.settings().sprintJumps.value;
 		this.allowJumpAt256     = Baritone.settings().allowJumpAt256.value;
 		this.allowParkourAscend = Baritone.settings().allowParkourAscend.value;
 		this.assumeWalkOnWater  = Baritone.settings().assumeWalkOnWater.value;
