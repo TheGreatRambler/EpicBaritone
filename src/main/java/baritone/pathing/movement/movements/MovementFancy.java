@@ -50,7 +50,7 @@ public class MovementFancy extends Movement {
 	// https://www.mcpk.wiki/wiki/Vertical_Movement_Formulas
 
 	private static double angleSubdivisions = 60.0;
-	private static double speedSubdivisions = 40.0;
+	private static double speedSubdivisions = 80.0;
 
 	private static double maxAngle      = Math.PI * 2;
 	private static double maxSpeed      = 20.0;
@@ -301,6 +301,13 @@ public class MovementFancy extends Movement {
 					  ? jumpCalculationsSpecificFirstTick.get(angleAndSpeed)
 					  : jumpCalculationsSpecificNotFirstTick.get(angleAndSpeed);
 			calcs.add(calc);
+		}
+	}
+
+	public ArrayList<double> getCosts(
+		ArrayList<JumpCalculation[]> jumpCalculations) {
+		ArrayList<double> costsArray = new ArrayList<>();
+		for(JumpCalculation tickCalculation : jumpCalculations) {
 		}
 	}
 
