@@ -28,37 +28,42 @@ import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.world.World;
 
 /**
- * Implementation of {@link IPlayerContext} that provides information about the primary player.
+ * Implementation of {@link IPlayerContext} that provides information about the
+ * primary player.
  *
  * @author Brady
  * @since 11/12/2018
  */
 public enum PrimaryPlayerContext implements IPlayerContext, Helper {
 
-    INSTANCE;
+	INSTANCE;
 
-    @Override
-    public ClientPlayerEntity player() {
-        return mc.player;
-    }
+	@Override
+	public ClientPlayerEntity player() {
+		return mc.player;
+	}
 
-    @Override
-    public IPlayerController playerController() {
-        return PrimaryPlayerController.INSTANCE;
-    }
+	@Override
+	public IPlayerController playerController() {
+		return PrimaryPlayerController.INSTANCE;
+	}
 
-    @Override
-    public World world() {
-        return mc.world;
-    }
+	@Override
+	public World world() {
+		return mc.world;
+	}
 
-    @Override
-    public IWorldData worldData() {
-        return BaritoneAPI.getProvider().getPrimaryBaritone().getWorldProvider().getCurrentWorld();
-    }
+	@Override
+	public IWorldData worldData() {
+		return BaritoneAPI.getProvider()
+			.getPrimaryBaritone()
+			.getWorldProvider()
+			.getCurrentWorld();
+	}
 
-    @Override
-    public RayTraceResult objectMouseOver() {
-        return RayTraceUtils.rayTraceTowards(player(), playerRotations(), playerController().getBlockReachDistance());
-    }
+	@Override
+	public RayTraceResult objectMouseOver() {
+		return RayTraceUtils.rayTraceTowards(player(), playerRotations(),
+			playerController().getBlockReachDistance());
+	}
 }

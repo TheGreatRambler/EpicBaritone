@@ -28,33 +28,31 @@ import java.util.stream.Stream;
 
 public class SchematicaCommand extends Command {
 
-    public SchematicaCommand(IBaritone baritone) {
-        super(baritone, "schematica");
-    }
+	public SchematicaCommand(IBaritone baritone) {
+		super(baritone, "schematica");
+	}
 
-    @Override
-    public void execute(String label, IArgConsumer args) throws CommandException {
-        args.requireMax(0);
-        baritone.getBuilderProcess().buildOpenSchematic();
-    }
+	@Override
+	public void execute(String label, IArgConsumer args)
+		throws CommandException {
+		args.requireMax(0);
+		baritone.getBuilderProcess().buildOpenSchematic();
+	}
 
-    @Override
-    public Stream<String> tabComplete(String label, IArgConsumer args) {
-        return Stream.empty();
-    }
+	@Override
+	public Stream<String> tabComplete(String label, IArgConsumer args) {
+		return Stream.empty();
+	}
 
-    @Override
-    public String getShortDesc() {
-        return "Builds the loaded schematic";
-    }
+	@Override
+	public String getShortDesc() {
+		return "Builds the loaded schematic";
+	}
 
-    @Override
-    public List<String> getLongDesc() {
-        return Arrays.asList(
-                "Builds the schematica currently open in Schematica.",
-                "",
-                "Usage:",
-                "> schematica"
-        );
-    }
+	@Override
+	public List<String> getLongDesc() {
+		return Arrays.asList(
+			"Builds the schematica currently open in Schematica.", "",
+			"Usage:", "> schematica");
+	}
 }

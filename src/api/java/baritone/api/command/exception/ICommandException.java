@@ -30,26 +30,28 @@ import static baritone.api.utils.Helper.HELPER;
  * {@link #handle(ICommand, List)} method that is used to provide useful output
  * to the user for diagnosing issues that may have occurred during execution.
  * <p>
- * Anything implementing this interface should be assignable to {@link Exception}.
+ * Anything implementing this interface should be assignable to {@link
+ * Exception}.
  *
  * @author Brady
  * @since 9/20/2019
  */
 public interface ICommandException {
 
-    /**
-     * @see Exception#getMessage()
-     * @return The exception details
-     */
-    String getMessage();
+	/**
+	 * @see Exception#getMessage()
+	 * @return The exception details
+	 */
+	String getMessage();
 
-    /**
-     * Called when this exception is thrown, to handle the exception.
-     *
-     * @param command The command that threw it.
-     * @param args    The arguments the command was called with.
-     */
-    default void handle(ICommand command, List<ICommandArgument> args) {
-        HELPER.logDirect(this.getMessage(), TextFormatting.RED);
-    }
+/**
+ * Called when this exception is thrown, to handle the exception.
+ *
+ * @param command The command that threw it.
+ * @param args    The arguments the command was called with.
+ */
+default void
+	handle(ICommand command, List<ICommandArgument> args) {
+		HELPER.logDirect(this.getMessage(), TextFormatting.RED);
+	}
 }

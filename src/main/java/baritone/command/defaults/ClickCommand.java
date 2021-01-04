@@ -28,34 +28,30 @@ import java.util.stream.Stream;
 
 public class ClickCommand extends Command {
 
-    public ClickCommand(IBaritone baritone) {
-        super(baritone, "click");
-    }
+	public ClickCommand(IBaritone baritone) {
+		super(baritone, "click");
+	}
 
-    @Override
-    public void execute(String label, IArgConsumer args) throws CommandException {
-        args.requireMax(0);
-        baritone.openClick();
-        logDirect("aight dude");
-    }
+	@Override
+	public void execute(String label, IArgConsumer args)
+		throws CommandException {
+		args.requireMax(0);
+		baritone.openClick();
+		logDirect("aight dude");
+	}
 
-    @Override
-    public Stream<String> tabComplete(String label, IArgConsumer args) {
-        return Stream.empty();
-    }
+	@Override
+	public Stream<String> tabComplete(String label, IArgConsumer args) {
+		return Stream.empty();
+	}
 
-    @Override
-    public String getShortDesc() {
-        return "Open click";
-    }
+	@Override
+	public String getShortDesc() {
+		return "Open click";
+	}
 
-    @Override
-    public List<String> getLongDesc() {
-        return Arrays.asList(
-                "Opens click dude",
-                "",
-                "Usage:",
-                "> click"
-        );
-    }
+	@Override
+	public List<String> getLongDesc() {
+		return Arrays.asList("Opens click dude", "", "Usage:", "> click");
+	}
 }

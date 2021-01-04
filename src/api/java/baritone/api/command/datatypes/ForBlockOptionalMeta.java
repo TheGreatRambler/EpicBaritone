@@ -23,15 +23,15 @@ import baritone.api.command.exception.CommandException;
 import java.util.stream.Stream;
 
 public enum ForBlockOptionalMeta implements IDatatypeFor<BlockOptionalMeta> {
-    INSTANCE;
+	INSTANCE;
 
-    @Override
-    public BlockOptionalMeta get(IDatatypeContext ctx) throws CommandException {
-        return new BlockOptionalMeta(ctx.getConsumer().getString());
-    }
+	@Override
+	public BlockOptionalMeta get(IDatatypeContext ctx) throws CommandException {
+		return new BlockOptionalMeta(ctx.getConsumer().getString());
+	}
 
-    @Override
-    public Stream<String> tabComplete(IDatatypeContext ctx) {
-        return ctx.getConsumer().tabCompleteDatatype(BlockById.INSTANCE);
-    }
+	@Override
+	public Stream<String> tabComplete(IDatatypeContext ctx) {
+		return ctx.getConsumer().tabCompleteDatatype(BlockById.INSTANCE);
+	}
 }

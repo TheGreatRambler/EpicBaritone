@@ -22,11 +22,11 @@ import net.minecraft.util.math.BlockPos;
 
 public interface ISchematic {
 
-    BlockState getBlockState(BlockPos var1);
+	BlockState getBlockState(BlockPos var1);
 
-    int getWidth();
+	int getWidth();
 
-    int getHeight();
+	int getHeight();
 
-    int getLength();
+	int getLength();
 }

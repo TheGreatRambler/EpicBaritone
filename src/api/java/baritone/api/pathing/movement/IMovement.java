@@ -26,30 +26,30 @@ import net.minecraft.util.math.BlockPos;
  */
 public interface IMovement {
 
-    double getCost();
+	double getCost();
 
-    MovementStatus update();
+	MovementStatus update();
 
-    /**
-     * Resets the current state status to {@link MovementStatus#PREPPING}
-     */
-    void reset();
+	/**
+	 * Resets the current state status to {@link MovementStatus#PREPPING}
+	 */
+	void reset();
 
-    /**
-     * Resets the cache for special break, place, and walk into blocks
-     */
-    void resetBlockCache();
+	/**
+	 * Resets the cache for special break, place, and walk into blocks
+	 */
+	void resetBlockCache();
 
-    /**
-     * @return Whether or not it is safe to cancel the current movement state
-     */
-    boolean safeToCancel();
+	/**
+	 * @return Whether or not it is safe to cancel the current movement state
+	 */
+	boolean safeToCancel();
 
-    boolean calculatedWhileLoaded();
+	boolean calculatedWhileLoaded();
 
-    BetterBlockPos getSrc();
+	BetterBlockPos getSrc();
 
-    BetterBlockPos getDest();
+	BetterBlockPos getDest();
 
-    BlockPos getDirection();
+	BlockPos getDirection();
 }

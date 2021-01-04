@@ -27,58 +27,58 @@ import net.minecraft.util.math.vector.Vector3d;
  */
 public final class RotationMoveEvent {
 
-    /**
-     * The type of event
-     */
-    private final Type type;
+	/**
+	 * The type of event
+	 */
+	private final Type type;
 
-    /**
-     * The yaw rotation
-     */
-    private float yaw;
+	/**
+	 * The yaw rotation
+	 */
+	private float yaw;
 
-    public RotationMoveEvent(Type type, float yaw) {
-        this.type = type;
-        this.yaw = yaw;
-    }
+	public RotationMoveEvent(Type type, float yaw) {
+		this.type = type;
+		this.yaw  = yaw;
+	}
 
-    /**
-     * Set the yaw movement rotation
-     *
-     * @param yaw Yaw rotation
-     */
-    public final void setYaw(float yaw) {
-        this.yaw = yaw;
-    }
+	/**
+	 * Set the yaw movement rotation
+	 *
+	 * @param yaw Yaw rotation
+	 */
+	public final void setYaw(float yaw) {
+		this.yaw = yaw;
+	}
 
-    /**
-     * @return The yaw rotation
-     */
-    public final float getYaw() {
-        return this.yaw;
-    }
+	/**
+	 * @return The yaw rotation
+	 */
+	public final float getYaw() {
+		return this.yaw;
+	}
 
-    /**
-     * @return The type of the event
-     */
-    public final Type getType() {
-        return this.type;
-    }
+	/**
+	 * @return The type of the event
+	 */
+	public final Type getType() {
+		return this.type;
+	}
 
-    public enum Type {
+	public enum Type {
 
-        /**
-         * Called when the player's motion is updated.
-         *
-         * @see Entity#moveRelative(float, Vector3d)
-         */
-        MOTION_UPDATE,
+		/**
+		 * Called when the player's motion is updated.
+		 *
+		 * @see Entity#moveRelative(float, Vector3d)
+		 */
+		MOTION_UPDATE,
 
-        /**
-         * Called when the player jumps.
-         *
-         * @see LivingEntity
-         */
-        JUMP
-    }
+		/**
+		 * Called when the player jumps.
+		 *
+		 * @see LivingEntity
+		 */
+		JUMP
+	}
 }

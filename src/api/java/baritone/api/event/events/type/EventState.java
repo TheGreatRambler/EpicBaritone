@@ -23,13 +23,13 @@ package baritone.api.event.events.type;
  */
 public enum EventState {
 
-    /**
-     * Before the dispatching of what the event is targetting
-     */
-    PRE,
+	/**
+	 * Before the dispatching of what the event is targetting
+	 */
+	PRE,
 
-    /**
-     * After the dispatching of what the event is targetting
-     */
-    POST
+	/**
+	 * After the dispatching of what the event is targetting
+	 */
+	POST
 }

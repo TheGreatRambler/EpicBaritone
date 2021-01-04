@@ -40,104 +40,93 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ClientPlayerEntity.class)
 public class MixinClientPlayerEntity {
 
-    @Inject(
-            method = "sendChatMessage",
-            at = @At("HEAD"),
-            cancellable = true
-    )
-    private void sendChatMessage(String msg, CallbackInfo ci) {
-        ChatEvent event = new ChatEvent(msg);
-        IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer((ClientPlayerEntity) (Object) this);
-        if (baritone == null) {
-            return;
-        }
-        baritone.getGameEventHandler().onSendChatMessage(event);
-        if (event.isCancelled()) {
-            ci.cancel();
-        }
-    }
+	@Inject(method = "sendChatMessage", at = @At("HEAD"), cancellable = true)
+	private void sendChatMessage(String msg, CallbackInfo ci) {
+		ChatEvent event    = new ChatEvent(msg);
+		IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer(
+			(ClientPlayerEntity)(Object)this);
+		if(baritone == null) {
+			return;
+		}
+		baritone.getGameEventHandler().onSendChatMessage(event);
+		if(event.isCancelled()) {
+			ci.cancel();
+		}
+	}
 
-    @Inject(
-            method = "tick",
-            at = @At(
-                    value = "INVOKE",
-                    target = "net/minecraft/client/entity/player/ClientPlayerEntity.isPassenger()Z",
-                    shift = At.Shift.BY,
-                    by = -3
-            )
-    )
-    private void onPreUpdate(CallbackInfo ci) {
-        IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer((ClientPlayerEntity) (Object) this);
-        if (baritone != null) {
-            baritone.getGameEventHandler().onPlayerUpdate(new PlayerUpdateEvent(EventState.PRE));
-        }
-    }
+	@Inject(method = "tick",
+		at         = @At(value = "INVOKE",
+            target
+            = "net/minecraft/client/entity/player/ClientPlayerEntity.isPassenger()Z",
+            shift = At.Shift.BY, by = -3))
+	private void
+	onPreUpdate(CallbackInfo ci) {
+		IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer(
+			(ClientPlayerEntity)(Object)this);
+		if(baritone != null) {
+			baritone.getGameEventHandler().onPlayerUpdate(
+				new PlayerUpdateEvent(EventState.PRE));
+		}
+	}
 
-    @Inject(
-            method = "tick",
-            at = @At(
-                    value = "INVOKE",
-                    target = "net/minecraft/client/entity/player/ClientPlayerEntity.onUpdateWalkingPlayer()V",
-                    shift = At.Shift.BY,
-                    by = 2
-            )
-    )
-    private void onPostUpdate(CallbackInfo ci) {
-        IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer((ClientPlayerEntity) (Object) this);
-        if (baritone != null) {
-            baritone.getGameEventHandler().onPlayerUpdate(new PlayerUpdateEvent(EventState.POST));
-        }
-    }
+	@Inject(method = "tick",
+		at         = @At(value = "INVOKE",
+            target
+            = "net/minecraft/client/entity/player/ClientPlayerEntity.onUpdateWalkingPlayer()V",
+            shift = At.Shift.BY, by = 2))
+	private void
+	onPostUpdate(CallbackInfo ci) {
+		IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer(
+			(ClientPlayerEntity)(Object)this);
+		if(baritone != null) {
+			baritone.getGameEventHandler().onPlayerUpdate(
+				new PlayerUpdateEvent(EventState.POST));
+		}
+	}
 
-    @Redirect(
-            method = "livingTick",
-            at = @At(
-                    value = "FIELD",
-                    target = "net/minecraft/entity/player/PlayerAbilities.allowFlying:Z"
-            )
-    )
-    private boolean isAllowFlying(PlayerAbilities capabilities) {
-        IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer((ClientPlayerEntity) (Object) this);
-        if (baritone == null) {
-            return capabilities.allowFlying;
-        }
-        return !baritone.getPathingBehavior().isPathing() && capabilities.allowFlying;
-    }
+	@Redirect(method = "livingTick",
+		at           = @At(value = "FIELD",
+            target
+            = "net/minecraft/entity/player/PlayerAbilities.allowFlying:Z"))
+	private boolean
+	isAllowFlying(PlayerAbilities capabilities) {
+		IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer(
+			(ClientPlayerEntity)(Object)this);
+		if(baritone == null) {
+			return capabilities.allowFlying;
+		}
+		return !baritone.getPathingBehavior().isPathing()
+			&& capabilities.allowFlying;
+	}
 
-    @Redirect(
-            method = "livingTick",
-            at = @At(
-                    value = "INVOKE",
-                    target = "net/minecraft/client/settings/KeyBinding.isKeyDown()Z"
-            )
-    )
-    private boolean isKeyDown(KeyBinding keyBinding) {
-        IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer((ClientPlayerEntity) (Object) this);
-        if (baritone == null) {
-            return keyBinding.isKeyDown();
-        }
-        SprintStateEvent event = new SprintStateEvent();
-        baritone.getGameEventHandler().onPlayerSprintState(event);
-        if (event.getState() != null) {
-            return event.getState();
-        }
-        if (baritone != BaritoneAPI.getProvider().getPrimaryBaritone()) {
-            // hitting control shouldn't make all bots sprint
-            return false;
-        }
-        return keyBinding.isKeyDown();
-    }
+	@Redirect(method = "livingTick",
+		at           = @At(value = "INVOKE",
+            target = "net/minecraft/client/settings/KeyBinding.isKeyDown()Z"))
+	private boolean
+	isKeyDown(KeyBinding keyBinding) {
+		IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer(
+			(ClientPlayerEntity)(Object)this);
+		if(baritone == null) {
+			return keyBinding.isKeyDown();
+		}
+		SprintStateEvent event = new SprintStateEvent();
+		baritone.getGameEventHandler().onPlayerSprintState(event);
+		if(event.getState() != null) {
+			return event.getState();
+		}
+		if(baritone != BaritoneAPI.getProvider().getPrimaryBaritone()) {
+			// hitting control shouldn't make all bots sprint
+			return false;
+		}
+		return keyBinding.isKeyDown();
+	}
 
-    @Inject(
-            method = "updateRidden",
-            at = @At(
-                    value = "HEAD"
-            )
-    )
-    private void updateRidden(CallbackInfo cb) {
-        IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer((ClientPlayerEntity) (Object) this);
-        if (baritone != null) {
-            ((LookBehavior) baritone.getLookBehavior()).pig();
-        }
-    }
+	@Inject(method = "updateRidden", at = @At(value = "HEAD"))
+	private void updateRidden(CallbackInfo cb) {
+		IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer(
+			(ClientPlayerEntity)(Object)this);
+		if(baritone != null) {
+			((LookBehavior)baritone.getLookBehavior()).pig();
+		}
+	}
 }

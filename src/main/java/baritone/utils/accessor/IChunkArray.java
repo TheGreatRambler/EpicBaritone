@@ -22,13 +22,13 @@ import net.minecraft.world.chunk.Chunk;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 public interface IChunkArray {
-    void copyFrom(IChunkArray other);
+	void copyFrom(IChunkArray other);
 
-    AtomicReferenceArray<Chunk> getChunks();
+	AtomicReferenceArray<Chunk> getChunks();
 
-    int centerX();
+	int centerX();
 
-    int centerZ();
+	int centerZ();
 
-    int viewDistance();
+	int viewDistance();
 }

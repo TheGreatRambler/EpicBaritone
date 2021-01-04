@@ -20,7 +20,7 @@ package baritone.utils.accessor;
 import net.minecraft.client.multiplayer.ClientChunkProvider;
 
 public interface IClientChunkProvider {
-    ClientChunkProvider createThreadSafeCopy();
+	ClientChunkProvider createThreadSafeCopy();
 
-    IChunkArray extractReferenceArray();
+	IChunkArray extractReferenceArray();
 }

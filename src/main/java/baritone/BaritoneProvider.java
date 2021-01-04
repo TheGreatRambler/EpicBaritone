@@ -36,39 +36,39 @@ import java.util.List;
  */
 public final class BaritoneProvider implements IBaritoneProvider {
 
-    private final Baritone primary;
-    private final List<IBaritone> all;
+	private final Baritone primary;
+	private final List<IBaritone> all;
 
-    {
-        this.primary = new Baritone();
-        this.all = Collections.singletonList(this.primary);
+	{
+		this.primary = new Baritone();
+		this.all     = Collections.singletonList(this.primary);
 
-        // Setup chat control, just for the primary instance
-        new ExampleBaritoneControl(this.primary);
-    }
+		// Setup chat control, just for the primary instance
+		new ExampleBaritoneControl(this.primary);
+	}
 
-    @Override
-    public IBaritone getPrimaryBaritone() {
-        return primary;
-    }
+	@Override
+	public IBaritone getPrimaryBaritone() {
+		return primary;
+	}
 
-    @Override
-    public List<IBaritone> getAllBaritones() {
-        return all;
-    }
+	@Override
+	public List<IBaritone> getAllBaritones() {
+		return all;
+	}
 
-    @Override
-    public IWorldScanner getWorldScanner() {
-        return WorldScanner.INSTANCE;
-    }
+	@Override
+	public IWorldScanner getWorldScanner() {
+		return WorldScanner.INSTANCE;
+	}
 
-    @Override
-    public ICommandSystem getCommandSystem() {
-        return CommandSystem.INSTANCE;
-    }
+	@Override
+	public ICommandSystem getCommandSystem() {
+		return CommandSystem.INSTANCE;
+	}
 
-    @Override
-    public ISchematicSystem getSchematicSystem() {
-        return SchematicSystem.INSTANCE;
-    }
+	@Override
+	public ISchematicSystem getSchematicSystem() {
+		return SchematicSystem.INSTANCE;
+	}
 }

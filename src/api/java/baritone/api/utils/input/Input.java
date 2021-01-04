@@ -24,48 +24,48 @@ package baritone.api.utils.input;
  */
 public enum Input {
 
-    /**
-     * The move forward input
-     */
-    MOVE_FORWARD,
+	/**
+	 * The move forward input
+	 */
+	MOVE_FORWARD,
 
-    /**
-     * The move back input
-     */
-    MOVE_BACK,
+	/**
+	 * The move back input
+	 */
+	MOVE_BACK,
 
-    /**
-     * The move left input
-     */
-    MOVE_LEFT,
+	/**
+	 * The move left input
+	 */
+	MOVE_LEFT,
 
-    /**
-     * The move right input
-     */
-    MOVE_RIGHT,
+	/**
+	 * The move right input
+	 */
+	MOVE_RIGHT,
 
-    /**
-     * The attack input
-     */
-    CLICK_LEFT,
+	/**
+	 * The attack input
+	 */
+	CLICK_LEFT,
 
-    /**
-     * The use item input
-     */
-    CLICK_RIGHT,
+	/**
+	 * The use item input
+	 */
+	CLICK_RIGHT,
 
-    /**
-     * The jump input
-     */
-    JUMP,
+	/**
+	 * The jump input
+	 */
+	JUMP,
 
-    /**
-     * The sneak input
-     */
-    SNEAK,
+	/**
+	 * The sneak input
+	 */
+	SNEAK,
 
-    /**
-     * The sprint input
-     */
-    SPRINT
+	/**
+	 * The sprint input
+	 */
+	SPRINT
 }

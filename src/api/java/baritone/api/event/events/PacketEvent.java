@@ -27,32 +27,33 @@ import net.minecraft.network.IPacket;
  */
 public final class PacketEvent {
 
-    private final NetworkManager networkManager;
+	private final NetworkManager networkManager;
 
-    private final EventState state;
+	private final EventState state;
 
-    private final IPacket<?> packet;
+	private final IPacket<?> packet;
 
-    public PacketEvent(NetworkManager networkManager, EventState state, IPacket<?> packet) {
-        this.networkManager = networkManager;
-        this.state = state;
-        this.packet = packet;
-    }
+	public PacketEvent(
+		NetworkManager networkManager, EventState state, IPacket<?> packet) {
+		this.networkManager = networkManager;
+		this.state          = state;
+		this.packet         = packet;
+	}
 
-    public final NetworkManager getNetworkManager() {
-        return this.networkManager;
-    }
+	public final NetworkManager getNetworkManager() {
+		return this.networkManager;
+	}
 
-    public final EventState getState() {
-        return this.state;
-    }
+	public final EventState getState() {
+		return this.state;
+	}
 
-    public final IPacket<?> getPacket() {
-        return this.packet;
-    }
+	public final IPacket<?> getPacket() {
+		return this.packet;
+	}
 
-    @SuppressWarnings("unchecked")
-    public final <T extends IPacket<?>> T cast() {
-        return (T) this.packet;
-    }
+	@SuppressWarnings("unchecked")
+	public final <T extends IPacket<?>> T cast() {
+		return (T)this.packet;
+	}
 }

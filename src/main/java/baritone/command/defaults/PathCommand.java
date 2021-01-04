@@ -30,36 +30,35 @@ import java.util.stream.Stream;
 
 public class PathCommand extends Command {
 
-    public PathCommand(IBaritone baritone) {
-        super(baritone, "path");
-    }
+	public PathCommand(IBaritone baritone) {
+		super(baritone, "path");
+	}
 
-    @Override
-    public void execute(String label, IArgConsumer args) throws CommandException {
-        ICustomGoalProcess customGoalProcess = baritone.getCustomGoalProcess();
-        args.requireMax(0);
-        WorldScanner.INSTANCE.repack(ctx);
-        customGoalProcess.path();
-        logDirect("Now pathing");
-    }
+	@Override
+	public void execute(String label, IArgConsumer args)
+		throws CommandException {
+		ICustomGoalProcess customGoalProcess = baritone.getCustomGoalProcess();
+		args.requireMax(0);
+		WorldScanner.INSTANCE.repack(ctx);
+		customGoalProcess.path();
+		logDirect("Now pathing");
+	}
 
-    @Override
-    public Stream<String> tabComplete(String label, IArgConsumer args) throws CommandException {
-        return Stream.empty();
-    }
+	@Override
+	public Stream<String> tabComplete(String label, IArgConsumer args)
+		throws CommandException {
+		return Stream.empty();
+	}
 
-    @Override
-    public String getShortDesc() {
-        return "Start heading towards the goal";
-    }
+	@Override
+	public String getShortDesc() {
+		return "Start heading towards the goal";
+	}
 
-    @Override
-    public List<String> getLongDesc() {
-        return Arrays.asList(
-                "The path command tells Baritone to head towards the current goal.",
-                "",
-                "Usage:",
-                "> path - Start the pathing."
-        );
-    }
+	@Override
+	public List<String> getLongDesc() {
+		return Arrays.asList(
+			"The path command tells Baritone to head towards the current goal.",
+			"", "Usage:", "> path - Start the pathing.");
+	}
 }

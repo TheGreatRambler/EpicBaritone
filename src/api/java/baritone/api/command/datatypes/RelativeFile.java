@@ -33,71 +33,85 @@ import java.util.stream.Stream;
 import static baritone.api.utils.Helper.HELPER;
 
 public enum RelativeFile implements IDatatypePost<File, File> {
-    INSTANCE;
+	INSTANCE;
 
-    @Override
-    public File apply(IDatatypeContext ctx, File original) throws CommandException {
-        if (original == null) {
-            original = new File("./");
-        }
+	@Override
+	public File apply(IDatatypeContext ctx, File original)
+		throws CommandException {
+		if(original == null) {
+			original = new File("./");
+		}
 
-        Path path;
-        try {
-            path = FileSystems.getDefault().getPath(ctx.getConsumer().getString());
-        } catch (InvalidPathException e) {
-            throw new IllegalArgumentException("invalid path");
-        }
-        return getCanonicalFileUnchecked(original.toPath().resolve(path).toFile());
-    }
+		Path path;
+		try {
+			path = FileSystems.getDefault().getPath(
+				ctx.getConsumer().getString());
+		} catch(InvalidPathException e) {
+			throw new IllegalArgumentException("invalid path");
+		}
+		return getCanonicalFileUnchecked(
+			original.toPath().resolve(path).toFile());
+	}
 
-    @Override
-    public Stream<String> tabComplete(IDatatypeContext ctx) {
-        return Stream.empty();
-    }
+	@Override
+	public Stream<String> tabComplete(IDatatypeContext ctx) {
+		return Stream.empty();
+	}
 
-    /**
-     * Seriously
-     *
-     * @param file File
-     * @return Canonical file of file
-     * @author LoganDark
-     */
-    private static File getCanonicalFileUnchecked(File file) {
-        try {
-            return file.getCanonicalFile();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
+	/**
+	 * Seriously
+	 *
+	 * @param file File
+	 * @return Canonical file of file
+	 * @author LoganDark
+	 */
+	private static File getCanonicalFileUnchecked(File file) {
+		try {
+			return file.getCanonicalFile();
+		} catch(IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
 
-    public static Stream<String> tabComplete(IArgConsumer consumer, File base0) throws CommandException {
-        // I will not make the caller deal with this, seriously
-        // Tab complete code is beautiful and I'm not going to bloat it with dumb ass checked exception bullshit -LoganDark
+	public static Stream<String> tabComplete(IArgConsumer consumer, File base0)
+		throws CommandException {
+		// I will not make the caller deal with this, seriously
+		// Tab complete code is beautiful and I'm not going to bloat it with
+		// dumb ass checked exception bullshit -LoganDark
 
-        // lol owned -Brady
+		// lol owned -Brady
 
-        File base = getCanonicalFileUnchecked(base0);
-        String currentPathStringThing = consumer.getString();
-        Path currentPath = FileSystems.getDefault().getPath(currentPathStringThing);
-        Path basePath = currentPath.isAbsolute() ? currentPath.getRoot() : base.toPath();
-        boolean useParent = !currentPathStringThing.isEmpty() && !currentPathStringThing.endsWith(File.separator);
-        File currentFile = currentPath.isAbsolute() ? currentPath.toFile() : new File(base, currentPathStringThing);
-        return Stream.of(Objects.requireNonNull(getCanonicalFileUnchecked(
-                useParent
-                        ? currentFile.getParentFile()
-                        : currentFile
-        ).listFiles()))
-                .map(f -> (currentPath.isAbsolute() ? f : basePath.relativize(f.toPath()).toString()) +
-                        (f.isDirectory() ? File.separator : ""))
-                .filter(s -> s.toLowerCase(Locale.US).startsWith(currentPathStringThing.toLowerCase(Locale.US)))
-                .filter(s -> !s.contains(" "));
-    }
+		File base                     = getCanonicalFileUnchecked(base0);
+		String currentPathStringThing = consumer.getString();
+		Path currentPath
+			= FileSystems.getDefault().getPath(currentPathStringThing);
+		Path basePath
+			= currentPath.isAbsolute() ? currentPath.getRoot() : base.toPath();
+		boolean useParent = !currentPathStringThing.isEmpty()
+							&& !currentPathStringThing.endsWith(File.separator);
+		File currentFile = currentPath.isAbsolute()
+							   ? currentPath.toFile()
+							   : new File(base, currentPathStringThing);
+		return Stream
+			.of(Objects.requireNonNull(getCanonicalFileUnchecked(
+				useParent ? currentFile.getParentFile() : currentFile)
+										   .listFiles()))
+			.map(f
+				-> (currentPath.isAbsolute()
+						   ? f
+						   : basePath.relativize(f.toPath()).toString())
+					   + (f.isDirectory() ? File.separator : ""))
+			.filter(s
+				-> s.toLowerCase(Locale.US).startsWith(
+					currentPathStringThing.toLowerCase(Locale.US)))
+			.filter(s -> !s.contains(" "));
+	}
 
-    public static File gameDir() {
-        File gameDir = HELPER.mc.gameDir.getAbsoluteFile();
-        if (gameDir.getName().equals(".")) {
-            return gameDir.getParentFile();
-        }
-        return gameDir;
-    }
+	public static File gameDir() {
+		File gameDir = HELPER.mc.gameDir.getAbsoluteFile();
+		if(gameDir.getName().equals(".")) {
+			return gameDir.getParentFile();
+		}
+		return gameDir;
+	}
 }

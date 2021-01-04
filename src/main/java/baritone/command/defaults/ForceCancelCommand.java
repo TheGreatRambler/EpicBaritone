@@ -29,36 +29,33 @@ import java.util.stream.Stream;
 
 public class ForceCancelCommand extends Command {
 
-    public ForceCancelCommand(IBaritone baritone) {
-        super(baritone, "forcecancel");
-    }
+	public ForceCancelCommand(IBaritone baritone) {
+		super(baritone, "forcecancel");
+	}
 
-    @Override
-    public void execute(String label, IArgConsumer args) throws CommandException {
-        args.requireMax(0);
-        IPathingBehavior pathingBehavior = baritone.getPathingBehavior();
-        pathingBehavior.cancelEverything();
-        pathingBehavior.forceCancel();
-        logDirect("ok force canceled");
-    }
+	@Override
+	public void execute(String label, IArgConsumer args)
+		throws CommandException {
+		args.requireMax(0);
+		IPathingBehavior pathingBehavior = baritone.getPathingBehavior();
+		pathingBehavior.cancelEverything();
+		pathingBehavior.forceCancel();
+		logDirect("ok force canceled");
+	}
 
-    @Override
-    public Stream<String> tabComplete(String label, IArgConsumer args) {
-        return Stream.empty();
-    }
+	@Override
+	public Stream<String> tabComplete(String label, IArgConsumer args) {
+		return Stream.empty();
+	}
 
-    @Override
-    public String getShortDesc() {
-        return "Force cancel";
-    }
+	@Override
+	public String getShortDesc() {
+		return "Force cancel";
+	}
 
-    @Override
-    public List<String> getLongDesc() {
-        return Arrays.asList(
-                "Like cancel, but more forceful.",
-                "",
-                "Usage:",
-                "> forcecancel"
-        );
-    }
+	@Override
+	public List<String> getLongDesc() {
+		return Arrays.asList(
+			"Like cancel, but more forceful.", "", "Usage:", "> forcecancel");
+	}
 }

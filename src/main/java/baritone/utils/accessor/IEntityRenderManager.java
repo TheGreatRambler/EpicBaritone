@@ -19,9 +19,9 @@ package baritone.utils.accessor;
 
 public interface IEntityRenderManager {
 
-    double renderPosX();
+	double renderPosX();
 
-    double renderPosY();
+	double renderPosY();
 
-    double renderPosZ();
+	double renderPosZ();
 }

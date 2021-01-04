@@ -29,47 +29,52 @@ import net.minecraft.util.math.RayTraceResult;
  */
 public final class BlockBreakHelper implements Helper {
 
-    private final IPlayerContext ctx;
-    private boolean didBreakLastTick;
+	private final IPlayerContext ctx;
+	private boolean didBreakLastTick;
 
-    BlockBreakHelper(IPlayerContext ctx) {
-        this.ctx = ctx;
-    }
+	BlockBreakHelper(IPlayerContext ctx) {
+		this.ctx = ctx;
+	}
 
-    public void stopBreakingBlock() {
-        // The player controller will never be null, but the player can be
-        if (ctx.player() != null && didBreakLastTick) {
-            if (!ctx.playerController().hasBrokenBlock()) {
-                // insane bypass to check breaking succeeded
-                ctx.playerController().setHittingBlock(true);
-            }
-            ctx.playerController().resetBlockRemoving();
-            didBreakLastTick = false;
-        }
-    }
+	public void stopBreakingBlock() {
+		// The player controller will never be null, but the player can be
+		if(ctx.player() != null && didBreakLastTick) {
+			if(!ctx.playerController().hasBrokenBlock()) {
+				// insane bypass to check breaking succeeded
+				ctx.playerController().setHittingBlock(true);
+			}
+			ctx.playerController().resetBlockRemoving();
+			didBreakLastTick = false;
+		}
+	}
 
-    public void tick(boolean isLeftClick) {
-        RayTraceResult trace = ctx.objectMouseOver();
-        boolean isBlockTrace = trace != null && trace.getType() == RayTraceResult.Type.BLOCK;
+	public void tick(boolean isLeftClick) {
+		RayTraceResult trace = ctx.objectMouseOver();
+		boolean isBlockTrace
+			= trace != null && trace.getType() == RayTraceResult.Type.BLOCK;
 
-        if (isLeftClick && isBlockTrace) {
-            if (!didBreakLastTick) {
-                ctx.playerController().syncHeldItem();
-                ctx.playerController().clickBlock(((BlockRayTraceResult) trace).getPos(), ((BlockRayTraceResult) trace).getFace());
-                ctx.player().swingArm(Hand.MAIN_HAND);
-            }
+		if(isLeftClick && isBlockTrace) {
+			if(!didBreakLastTick) {
+				ctx.playerController().syncHeldItem();
+				ctx.playerController().clickBlock(
+					((BlockRayTraceResult)trace).getPos(),
+					((BlockRayTraceResult)trace).getFace());
+				ctx.player().swingArm(Hand.MAIN_HAND);
+			}
 
-            // Attempt to break the block
-            if (ctx.playerController().onPlayerDamageBlock(((BlockRayTraceResult) trace).getPos(), ((BlockRayTraceResult) trace).getFace())) {
-                ctx.player().swingArm(Hand.MAIN_HAND);
-            }
+			// Attempt to break the block
+			if(ctx.playerController().onPlayerDamageBlock(
+				   ((BlockRayTraceResult)trace).getPos(),
+				   ((BlockRayTraceResult)trace).getFace())) {
+				ctx.player().swingArm(Hand.MAIN_HAND);
+			}
 
-            ctx.playerController().setHittingBlock(false);
+			ctx.playerController().setHittingBlock(false);
 
-            didBreakLastTick = true;
-        } else if (didBreakLastTick) {
-            stopBreakingBlock();
-            didBreakLastTick = false;
-        }
-    }
+			didBreakLastTick = true;
+		} else if(didBreakLastTick) {
+			stopBreakingBlock();
+			didBreakLastTick = false;
+		}
+	}
 }

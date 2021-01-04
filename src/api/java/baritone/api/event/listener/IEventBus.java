@@ -27,10 +27,10 @@ package baritone.api.event.listener;
  */
 public interface IEventBus extends IGameEventListener {
 
-    /**
-     * Registers the specified {@link IGameEventListener} to this event bus
-     *
-     * @param listener The listener
-     */
-    void registerEventListener(IGameEventListener listener);
+	/**
+	 * Registers the specified {@link IGameEventListener} to this event bus
+	 *
+	 * @param listener The listener
+	 */
+	void registerEventListener(IGameEventListener listener);
 }

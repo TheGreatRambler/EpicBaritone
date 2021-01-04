@@ -31,17 +31,18 @@ import baritone.api.command.argument.IArgConsumer;
  */
 public interface IDatatypeContext {
 
-    /**
-     * Provides the {@link IBaritone} instance that is associated with the action relating to datatype handling.
-     *
-     * @return The context {@link IBaritone} instance.
-     */
-    IBaritone getBaritone();
+	/**
+	 * Provides the {@link IBaritone} instance that is associated with the
+	 * action relating to datatype handling.
+	 *
+	 * @return The context {@link IBaritone} instance.
+	 */
+	IBaritone getBaritone();
 
-    /**
-     * Provides the {@link IArgConsumer}} to fetch input information from.
-     *
-     * @return The context {@link IArgConsumer}}.
-     */
-    IArgConsumer getConsumer();
+	/**
+	 * Provides the {@link IArgConsumer}} to fetch input information from.
+	 *
+	 * @return The context {@link IArgConsumer}}.
+	 */
+	IArgConsumer getConsumer();
 }

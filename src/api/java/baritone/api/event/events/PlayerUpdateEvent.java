@@ -25,19 +25,19 @@ import baritone.api.event.events.type.EventState;
  */
 public final class PlayerUpdateEvent {
 
-    /**
-     * The state of the event
-     */
-    private final EventState state;
+	/**
+	 * The state of the event
+	 */
+	private final EventState state;
 
-    public PlayerUpdateEvent(EventState state) {
-        this.state = state;
-    }
+	public PlayerUpdateEvent(EventState state) {
+		this.state = state;
+	}
 
-    /**
-     * @return The state of the event
-     */
-    public final EventState getState() {
-        return this.state;
-    }
+	/**
+	 * @return The state of the event
+	 */
+	public final EventState getState() {
+		return this.state;
+	}
 }

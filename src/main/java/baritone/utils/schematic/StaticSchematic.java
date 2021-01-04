@@ -29,22 +29,24 @@ import java.util.List;
  * @author Brady
  * @since 12/23/2019
  */
-public class StaticSchematic extends AbstractSchematic implements IStaticSchematic {
+public class StaticSchematic
+	extends AbstractSchematic implements IStaticSchematic {
 
-    protected BlockState[][][] states;
+	protected BlockState[][][] states;
 
-    @Override
-    public BlockState desiredState(int x, int y, int z, BlockState current, List<BlockState> approxPlaceable) {
-        return this.states[x][z][y];
-    }
+	@Override
+	public BlockState desiredState(int x, int y, int z, BlockState current,
+		List<BlockState> approxPlaceable) {
+		return this.states[x][z][y];
+	}
 
-    @Override
-    public BlockState getDirect(int x, int y, int z) {
-        return this.states[x][z][y];
-    }
+	@Override
+	public BlockState getDirect(int x, int y, int z) {
+		return this.states[x][z][y];
+	}
 
-    @Override
-    public BlockState[] getColumn(int x, int z) {
-        return this.states[x][z];
-    }
+	@Override
+	public BlockState[] getColumn(int x, int z) {
+		return this.states[x][z];
+	}
 }

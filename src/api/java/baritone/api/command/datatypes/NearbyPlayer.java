@@ -31,26 +31,33 @@ import java.util.stream.Stream;
  * render distance of the target {@link IBaritone} instance.
  */
 public enum NearbyPlayer implements IDatatypeFor<PlayerEntity> {
-    INSTANCE;
+	INSTANCE;
 
-    @Override
-    public PlayerEntity get(IDatatypeContext ctx) throws CommandException {
-        final String username = ctx.getConsumer().getString();
-        return getPlayers(ctx).stream()
-                .filter(s -> s.getName().getString().equalsIgnoreCase(username))
-                .findFirst().orElse(null);
-    }
+	@Override
+	public PlayerEntity get(IDatatypeContext ctx) throws CommandException {
+		final String username = ctx.getConsumer().getString();
+		return getPlayers(ctx)
+			.stream()
+			.filter(s -> s.getName().getString().equalsIgnoreCase(username))
+			.findFirst()
+			.orElse(null);
+	}
 
-    @Override
-    public Stream<String> tabComplete(IDatatypeContext ctx) throws CommandException {
-        return new TabCompleteHelper()
-                .append(getPlayers(ctx).stream().map(PlayerEntity::getName).map(ITextComponent::getString))
-                .filterPrefix(ctx.getConsumer().getString())
-                .sortAlphabetically()
-                .stream();
-    }
+	@Override
+	public Stream<String> tabComplete(IDatatypeContext ctx)
+		throws CommandException {
+		return new TabCompleteHelper()
+			.append(getPlayers(ctx)
+						.stream()
+						.map(PlayerEntity::getName)
+						.map(ITextComponent::getString))
+			.filterPrefix(ctx.getConsumer().getString())
+			.sortAlphabetically()
+			.stream();
+	}
 
-    private static List<? extends PlayerEntity> getPlayers(IDatatypeContext ctx) {
-        return ctx.getBaritone().getPlayerContext().world().getPlayers();
-    }
+	private static List<? extends PlayerEntity> getPlayers(
+		IDatatypeContext ctx) {
+		return ctx.getBaritone().getPlayerContext().world().getPlayers();
+	}
 }

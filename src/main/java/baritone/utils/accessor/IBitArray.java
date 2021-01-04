@@ -1,6 +1,3 @@
 package baritone.utils.accessor;
 
-public interface IBitArray {
-
-    int[] toArray();
-}
+public interface IBitArray { int[] toArray(); }

@@ -24,19 +24,18 @@ import org.spongepowered.asm.mixin.Mixin;
 @Mixin(EntityRendererManager.class)
 public class MixinEntityRenderManager implements IEntityRenderManager {
 
+	@Override
+	public double renderPosX() {
+		return ((EntityRendererManager)(Object)this).info.getProjectedView().x;
+	}
 
-    @Override
-    public double renderPosX() {
-        return ((EntityRendererManager) (Object) this).info.getProjectedView().x;
-    }
+	@Override
+	public double renderPosY() {
+		return ((EntityRendererManager)(Object)this).info.getProjectedView().y;
+	}
 
-    @Override
-    public double renderPosY() {
-        return ((EntityRendererManager) (Object) this).info.getProjectedView().y;
-    }
-
-    @Override
-    public double renderPosZ() {
-        return ((EntityRendererManager) (Object) this).info.getProjectedView().z;
-    }
+	@Override
+	public double renderPosZ() {
+		return ((EntityRendererManager)(Object)this).info.getProjectedView().z;
+	}
 }

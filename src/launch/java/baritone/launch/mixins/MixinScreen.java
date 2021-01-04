@@ -27,7 +27,7 @@ import java.net.URI;
 @Mixin(Screen.class)
 public abstract class MixinScreen implements IGuiScreen {
 
-    @Override
-    @Invoker("openLink")
-    public abstract void openLinkInvoker(URI url);
+	@Override
+	@Invoker("openLink")
+	public abstract void openLinkInvoker(URI url);
 }

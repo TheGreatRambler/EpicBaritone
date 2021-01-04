@@ -32,14 +32,14 @@ import java.io.InputStream;
  */
 public interface ISchematicFormat {
 
-    /**
-     * @return The parser for creating schematics of this format
-     */
-    IStaticSchematic parse(InputStream input) throws IOException;
+	/**
+	 * @return The parser for creating schematics of this format
+	 */
+	IStaticSchematic parse(InputStream input) throws IOException;
 
-    /**
-     * @param file The file to check against
-     * @return Whether or not the specified file matches this schematic format
-     */
-    boolean isFileType(File file);
+	/**
+	 * @param file The file to check against
+	 * @return Whether or not the specified file matches this schematic format
+	 */
+	boolean isFileType(File file);
 }

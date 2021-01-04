@@ -27,41 +27,35 @@ import org.spongepowered.asm.mixin.Unique;
 @Mixin(BitArray.class)
 public abstract class MixinBitArray implements IBitArray {
 
-    @Shadow
-    @Final
-    private long[] longArray;
+	@Shadow @Final private long[] longArray;
 
-    @Shadow
-    @Final
-    private int bitsPerEntry;
+	@Shadow @Final private int bitsPerEntry;
 
-    @Shadow
-    @Final
-    private long maxEntryValue;
+	@Shadow @Final private long maxEntryValue;
 
-    @Shadow
-    @Final
-    private int arraySize;
+	@Shadow @Final private int arraySize;
 
-    @Override
-    @Unique
-    public int[] toArray() {
-        int[] out = new int[arraySize];
+	@Override
+	@Unique
+	public int[] toArray() {
+		int[] out = new int[arraySize];
 
-        for (int idx = 0, kl = bitsPerEntry - 1; idx < arraySize; idx++, kl += bitsPerEntry) {
-            final int i = idx * bitsPerEntry;
-            final int j = i >> 6;
-            final int l = i & 63;
-            final int k = kl >> 6;
-            final long jl = longArray[j] >>> l;
+		for(int idx = 0, kl = bitsPerEntry - 1; idx < arraySize;
+			idx++, kl += bitsPerEntry) {
+			final int i   = idx * bitsPerEntry;
+			final int j   = i >> 6;
+			final int l   = i & 63;
+			final int k   = kl >> 6;
+			final long jl = longArray[j] >>> l;
 
-            if (j == k) {
-                out[idx] = (int) (jl & maxEntryValue);
-            } else {
-                out[idx] = (int) ((jl | longArray[k] << (64 - l)) & maxEntryValue);
-            }
-        }
+			if(j == k) {
+				out[idx] = (int)(jl & maxEntryValue);
+			} else {
+				out[idx]
+					= (int)((jl | longArray[k] << (64 - l)) & maxEntryValue);
+			}
+		}
 
-        return out;
-    }
+		return out;
+	}
 }

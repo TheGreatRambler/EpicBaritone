@@ -33,23 +33,27 @@ import java.util.List;
  */
 public class BaritoneTweaker extends SimpleTweaker {
 
-    @Override
-    public void injectIntoClassLoader(LaunchClassLoader classLoader) {
-        super.injectIntoClassLoader(classLoader);
+	@Override
+	public void injectIntoClassLoader(LaunchClassLoader classLoader) {
+		super.injectIntoClassLoader(classLoader);
 
-        MixinBootstrap.init();
+		MixinBootstrap.init();
 
-        // noinspection unchecked
-        List<String> tweakClasses = (List<String>) Launch.blackboard.get("TweakClasses");
+		// noinspection unchecked
+		List<String> tweakClasses
+			= (List<String>)Launch.blackboard.get("TweakClasses");
 
-        String obfuscation = ObfuscationServiceMCP.NOTCH;
-        if (tweakClasses.stream().anyMatch(s -> s.contains("net.minecraftforge.fml.common.launcher"))) {
-            obfuscation = ObfuscationServiceMCP.SEARGE;
-        }
+		String obfuscation = ObfuscationServiceMCP.NOTCH;
+		if(tweakClasses.stream().anyMatch(
+			   s -> s.contains("net.minecraftforge.fml.common.launcher"))) {
+			obfuscation = ObfuscationServiceMCP.SEARGE;
+		}
 
-        MixinEnvironment.getDefaultEnvironment().setSide(MixinEnvironment.Side.CLIENT);
-        MixinEnvironment.getDefaultEnvironment().setObfuscationContext(obfuscation);
+		MixinEnvironment.getDefaultEnvironment().setSide(
+			MixinEnvironment.Side.CLIENT);
+		MixinEnvironment.getDefaultEnvironment().setObfuscationContext(
+			obfuscation);
 
-        Mixins.addConfiguration("mixins.baritone.json");
-    }
+		Mixins.addConfiguration("mixins.baritone.json");
+	}
 }

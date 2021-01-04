@@ -44,120 +44,110 @@ import java.util.function.BiFunction;
 @Mixin(Minecraft.class)
 public class MixinMinecraft {
 
-    @Shadow
-    public ClientPlayerEntity player;
-    @Shadow
-    public ClientWorld world;
+	@Shadow public ClientPlayerEntity player;
+	@Shadow public ClientWorld world;
 
-    @Inject(
-            method = "<init>",
-            at = @At("RETURN")
-    )
-    private void postInit(CallbackInfo ci) {
-        BaritoneAPI.getProvider().getPrimaryBaritone();
-    }
+	@Inject(method = "<init>", at = @At("RETURN"))
+	private void postInit(CallbackInfo ci) {
+		BaritoneAPI.getProvider().getPrimaryBaritone();
+	}
 
+	@Inject(method = "<init>", at = @At("RETURN"))
+	private void preInit(CallbackInfo ci) {
+		BaritoneAutoTest.INSTANCE.onPreInit();
+	}
 
-    @Inject(
-            method = "<init>",
-            at = @At("RETURN")
-    )
-    private void preInit(CallbackInfo ci) {
-        BaritoneAutoTest.INSTANCE.onPreInit();
-    }
+	@Inject(method = "runTick",
+		at         = @At(value = "FIELD", opcode = Opcodes.GETFIELD,
+            target
+            = "net/minecraft/client/Minecraft.currentScreen:Lnet/minecraft/client/gui/screen/Screen;",
+            ordinal = 5, shift = At.Shift.BY, by = -3))
+	private void
+	runTick(CallbackInfo ci) {
+		final BiFunction<EventState, TickEvent.Type, TickEvent> tickProvider
+			= TickEvent.createNextProvider();
 
-    @Inject(
-            method = "runTick",
-            at = @At(
-                    value = "FIELD",
-                    opcode = Opcodes.GETFIELD,
-                    target = "net/minecraft/client/Minecraft.currentScreen:Lnet/minecraft/client/gui/screen/Screen;",
-                    ordinal = 5,
-                    shift = At.Shift.BY,
-                    by = -3
-            )
-    )
-    private void runTick(CallbackInfo ci) {
-        final BiFunction<EventState, TickEvent.Type, TickEvent> tickProvider = TickEvent.createNextProvider();
+		for(IBaritone baritone : BaritoneAPI.getProvider().getAllBaritones()) {
 
-        for (IBaritone baritone : BaritoneAPI.getProvider().getAllBaritones()) {
+			TickEvent.Type type
+				= baritone.getPlayerContext().player() != null
+						  && baritone.getPlayerContext().world() != null
+					  ? TickEvent.Type.IN
+					  : TickEvent.Type.OUT;
 
-            TickEvent.Type type = baritone.getPlayerContext().player() != null && baritone.getPlayerContext().world() != null
-                    ? TickEvent.Type.IN
-                    : TickEvent.Type.OUT;
+			baritone.getGameEventHandler().onTick(
+				tickProvider.apply(EventState.PRE, type));
+		}
+	}
 
-            baritone.getGameEventHandler().onTick(tickProvider.apply(EventState.PRE, type));
-        }
+	@Inject(method = "loadWorld(Lnet/minecraft/client/world/ClientWorld;)V",
+		at         = @At("HEAD"))
+	private void
+	preLoadWorld(ClientWorld world, CallbackInfo ci) {
+		// If we're unloading the world but one doesn't exist, ignore it
+		if(this.world == null && world == null) {
+			return;
+		}
 
-    }
+		// mc.world changing is only the primary baritone
 
-    @Inject(
-            method = "loadWorld(Lnet/minecraft/client/world/ClientWorld;)V",
-            at = @At("HEAD")
-    )
-    private void preLoadWorld(ClientWorld world, CallbackInfo ci) {
-        // If we're unloading the world but one doesn't exist, ignore it
-        if (this.world == null && world == null) {
-            return;
-        }
+		BaritoneAPI.getProvider()
+			.getPrimaryBaritone()
+			.getGameEventHandler()
+			.onWorldEvent(new WorldEvent(world, EventState.PRE));
+	}
 
-        // mc.world changing is only the primary baritone
+	@Inject(method = "loadWorld(Lnet/minecraft/client/world/ClientWorld;)V",
+		at         = @At("RETURN"))
+	private void
+	postLoadWorld(ClientWorld world, CallbackInfo ci) {
+		// still fire event for both null, as that means we've just finished
+		// exiting a world
 
-        BaritoneAPI.getProvider().getPrimaryBaritone().getGameEventHandler().onWorldEvent(
-                new WorldEvent(
-                        world,
-                        EventState.PRE
-                )
-        );
-    }
+		// mc.world changing is only the primary baritone
+		BaritoneAPI.getProvider()
+			.getPrimaryBaritone()
+			.getGameEventHandler()
+			.onWorldEvent(new WorldEvent(world, EventState.POST));
+	}
 
-    @Inject(
-            method = "loadWorld(Lnet/minecraft/client/world/ClientWorld;)V",
-            at = @At("RETURN")
-    )
-    private void postLoadWorld(ClientWorld world, CallbackInfo ci) {
-        // still fire event for both null, as that means we've just finished exiting a world
+	@Redirect(method = "runTick",
+		at           = @At(value = "FIELD", opcode = Opcodes.GETFIELD,
+            target = "net/minecraft/client/gui/screen/Screen.passEvents:Z"))
+	private boolean
+	passEvents(Screen screen) {
+		// allow user input is only the primary baritone
+		return (BaritoneAPI.getProvider()
+					   .getPrimaryBaritone()
+					   .getPathingBehavior()
+					   .isPathing()
+				   && player != null)
+			|| screen.passEvents;
+	}
 
-        // mc.world changing is only the primary baritone
-        BaritoneAPI.getProvider().getPrimaryBaritone().getGameEventHandler().onWorldEvent(
-                new WorldEvent(
-                        world,
-                        EventState.POST
-                )
-        );
-    }
-
-    @Redirect(
-            method = "runTick",
-            at = @At(
-                    value = "FIELD",
-                    opcode = Opcodes.GETFIELD,
-                    target = "net/minecraft/client/gui/screen/Screen.passEvents:Z"
-            )
-    )
-    private boolean passEvents(Screen screen) {
-        // allow user input is only the primary baritone
-        return (BaritoneAPI.getProvider().getPrimaryBaritone().getPathingBehavior().isPathing() && player != null) || screen.passEvents;
-    }
-
-    // TODO
-    // FIXME
-    // bradyfix
-    // i cant mixin
-    // lol
-    // https://discordapp.com/channels/208753003996512258/503692253881958400/674760939681349652
-    // https://discordapp.com/channels/208753003996512258/503692253881958400/674756457966862376
-    /*@Inject(
-            method = "rightClickMouse",
-            at = @At(
-                    value = "INVOKE",
-                    target = "net/minecraft/client/entity/player/ClientPlayerEntity.swingArm(Lnet/minecraft/util/Hand;)V",
-                    ordinal = 1
-            ),
-            locals = LocalCapture.CAPTURE_FAILHARD
-    )
-    private void onBlockUse(CallbackInfo ci, Hand var1[], int var2, int var3, Hand enumhand, ItemStack itemstack, EntityRayTraceResult rt, Entity ent, ActionResultType art, BlockRayTraceResult raytrace, int i, ActionResultType enumactionresult) {
-        // rightClickMouse is only for the main player
-        BaritoneAPI.getProvider().getPrimaryBaritone().getGameEventHandler().onBlockInteract(new BlockInteractEvent(raytrace.getPos(), BlockInteractEvent.Type.USE));
-    }*/
+	// TODO
+	// FIXME
+	// bradyfix
+	// i cant mixin
+	// lol
+	// https://discordapp.com/channels/208753003996512258/503692253881958400/674760939681349652
+	// https://discordapp.com/channels/208753003996512258/503692253881958400/674756457966862376
+	/*@Inject(
+			method = "rightClickMouse",
+			at = @At(
+					value = "INVOKE",
+					target =
+	"net/minecraft/client/entity/player/ClientPlayerEntity.swingArm(Lnet/minecraft/util/Hand;)V",
+					ordinal = 1
+			),
+			locals = LocalCapture.CAPTURE_FAILHARD
+	)
+	private void onBlockUse(CallbackInfo ci, Hand var1[], int var2, int var3,
+	Hand enumhand, ItemStack itemstack, EntityRayTraceResult rt, Entity ent,
+	ActionResultType art, BlockRayTraceResult raytrace, int i, ActionResultType
+	enumactionresult) {
+		// rightClickMouse is only for the main player
+		BaritoneAPI.getProvider().getPrimaryBaritone().getGameEventHandler().onBlockInteract(new
+	BlockInteractEvent(raytrace.getPos(), BlockInteractEvent.Type.USE));
+	}*/
 }

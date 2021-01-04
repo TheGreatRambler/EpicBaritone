@@ -32,26 +32,26 @@ import javax.annotation.Nullable;
 @SuppressWarnings("NullableProblems")
 public final class BlockStateInterfaceAccessWrapper implements IBlockReader {
 
-    private final BlockStateInterface bsi;
+	private final BlockStateInterface bsi;
 
-    BlockStateInterfaceAccessWrapper(BlockStateInterface bsi) {
-        this.bsi = bsi;
-    }
+	BlockStateInterfaceAccessWrapper(BlockStateInterface bsi) {
+		this.bsi = bsi;
+	}
 
-    @Nullable
-    @Override
-    public TileEntity getTileEntity(BlockPos pos) {
-        return null;
-    }
+	@Nullable
+	@Override
+	public TileEntity getTileEntity(BlockPos pos) {
+		return null;
+	}
 
-    @Override
-    public BlockState getBlockState(BlockPos pos) {
-        // BlockStateInterface#get0(BlockPos) btfo!
-        return this.bsi.get0(pos.getX(), pos.getY(), pos.getZ());
-    }
+	@Override
+	public BlockState getBlockState(BlockPos pos) {
+		// BlockStateInterface#get0(BlockPos) btfo!
+		return this.bsi.get0(pos.getX(), pos.getY(), pos.getZ());
+	}
 
-    @Override
-    public FluidState getFluidState(BlockPos blockPos) {
-        return getBlockState(blockPos).getFluidState();
-    }
+	@Override
+	public FluidState getFluidState(BlockPos blockPos) {
+		return getBlockState(blockPos).getFluidState();
+	}
 }

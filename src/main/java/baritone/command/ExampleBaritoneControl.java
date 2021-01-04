@@ -49,151 +49,168 @@ import java.util.stream.Stream;
 
 import static baritone.api.command.IBaritoneChatControl.FORCE_COMMAND_PREFIX;
 
-public class ExampleBaritoneControl implements Helper, AbstractGameEventListener {
+public class ExampleBaritoneControl
+	implements Helper, AbstractGameEventListener {
 
-    private static final Settings settings = BaritoneAPI.getSettings();
-    private final ICommandManager manager;
+	private static final Settings settings = BaritoneAPI.getSettings();
+	private final ICommandManager manager;
 
-    public ExampleBaritoneControl(IBaritone baritone) {
-        this.manager = baritone.getCommandManager();
-        baritone.getGameEventHandler().registerEventListener(this);
-    }
+	public ExampleBaritoneControl(IBaritone baritone) {
+		this.manager = baritone.getCommandManager();
+		baritone.getGameEventHandler().registerEventListener(this);
+	}
 
-    @Override
-    public void onSendChatMessage(ChatEvent event) {
-        String msg = event.getMessage();
-        String prefix = settings.prefix.value;
-        boolean forceRun = msg.startsWith(FORCE_COMMAND_PREFIX);
-        if ((settings.prefixControl.value && msg.startsWith(prefix)) || forceRun) {
-            event.cancel();
-            String commandStr = msg.substring(forceRun ? FORCE_COMMAND_PREFIX.length() : prefix.length());
-            if (!runCommand(commandStr) && !commandStr.trim().isEmpty()) {
-                new CommandNotFoundException(CommandManager.expand(commandStr).getA()).handle(null, null);
-            }
-        } else if ((settings.chatControl.value || settings.chatControlAnyway.value) && runCommand(msg)) {
-            event.cancel();
-        }
-    }
+	@Override
+	public void onSendChatMessage(ChatEvent event) {
+		String msg       = event.getMessage();
+		String prefix    = settings.prefix.value;
+		boolean forceRun = msg.startsWith(FORCE_COMMAND_PREFIX);
+		if((settings.prefixControl.value && msg.startsWith(prefix))
+			|| forceRun) {
+			event.cancel();
+			String commandStr = msg.substring(
+				forceRun ? FORCE_COMMAND_PREFIX.length() : prefix.length());
+			if(!runCommand(commandStr) && !commandStr.trim().isEmpty()) {
+				new CommandNotFoundException(
+					CommandManager.expand(commandStr).getA())
+					.handle(null, null);
+			}
+		} else if((settings.chatControl.value
+					  || settings.chatControlAnyway.value)
+				  && runCommand(msg)) {
+			event.cancel();
+		}
+	}
 
-    private void logRanCommand(String command, String rest) {
-        if (settings.echoCommands.value) {
-            String msg = command + rest;
-            String toDisplay = settings.censorRanCommands.value ? command + " ..." : msg;
-            TextComponent component = new StringTextComponent(String.format("> %s", toDisplay));
-            component.setStyle(component.getStyle()
-                    .setFormatting(TextFormatting.WHITE)
-                    .setHoverEvent(new HoverEvent(
-                            HoverEvent.Action.SHOW_TEXT,
-                            new StringTextComponent("Click to rerun command")
-                    ))
-                    .setClickEvent(new ClickEvent(
-                            ClickEvent.Action.RUN_COMMAND,
-                            FORCE_COMMAND_PREFIX + msg
-                    )));
-            logDirect(component);
-        }
-    }
+	private void logRanCommand(String command, String rest) {
+		if(settings.echoCommands.value) {
+			String msg = command + rest;
+			String toDisplay
+				= settings.censorRanCommands.value ? command + " ..." : msg;
+			TextComponent component
+				= new StringTextComponent(String.format("> %s", toDisplay));
+			component.setStyle(
+				component.getStyle()
+					.setFormatting(TextFormatting.WHITE)
+					.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+						new StringTextComponent("Click to rerun command")))
+					.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+						FORCE_COMMAND_PREFIX + msg)));
+			logDirect(component);
+		}
+	}
 
-    public boolean runCommand(String msg) {
-        if (msg.trim().equalsIgnoreCase("damn")) {
-            logDirect("daniel");
-            return false;
-        } else if (msg.trim().equalsIgnoreCase("orderpizza")) {
-            try {
-                ((IGuiScreen) mc.currentScreen).openLinkInvoker(new URI("https://www.dominos.com/en/pages/order/"));
-            } catch (NullPointerException | URISyntaxException ignored) {}
-            return false;
-        }
-        if (msg.isEmpty()) {
-            return this.runCommand("help");
-        }
-        Tuple<String, List<ICommandArgument>> pair = CommandManager.expand(msg);
-        String command = pair.getA();
-        String rest = msg.substring(pair.getA().length());
-        ArgConsumer argc = new ArgConsumer(this.manager, pair.getB());
-        if (!argc.hasAny()) {
-            Settings.Setting setting = settings.byLowerName.get(command.toLowerCase(Locale.US));
-            if (setting != null) {
-                logRanCommand(command, rest);
-                if (setting.getValueClass() == Boolean.class) {
-                    this.manager.execute(String.format("set toggle %s", setting.getName()));
-                } else {
-                    this.manager.execute(String.format("set %s", setting.getName()));
-                }
-                return true;
-            }
-        } else if (argc.hasExactlyOne()) {
-            for (Settings.Setting setting : settings.allSettings) {
-                if (setting.getName().equals("logger")) {
-                    continue;
-                }
-                if (setting.getName().equalsIgnoreCase(pair.getA())) {
-                    logRanCommand(command, rest);
-                    try {
-                        this.manager.execute(String.format("set %s %s", setting.getName(), argc.getString()));
-                    } catch (CommandNotEnoughArgumentsException ignored) {} // The operation is safe
-                    return true;
-                }
-            }
-        }
+	public boolean runCommand(String msg) {
+		if(msg.trim().equalsIgnoreCase("damn")) {
+			logDirect("daniel");
+			return false;
+		} else if(msg.trim().equalsIgnoreCase("orderpizza")) {
+			try {
+				((IGuiScreen)mc.currentScreen)
+					.openLinkInvoker(
+						new URI("https://www.dominos.com/en/pages/order/"));
+			} catch(NullPointerException | URISyntaxException ignored) {
+			}
+			return false;
+		}
+		if(msg.isEmpty()) {
+			return this.runCommand("help");
+		}
+		Tuple<String, List<ICommandArgument>> pair = CommandManager.expand(msg);
+		String command                             = pair.getA();
+		String rest      = msg.substring(pair.getA().length());
+		ArgConsumer argc = new ArgConsumer(this.manager, pair.getB());
+		if(!argc.hasAny()) {
+			Settings.Setting setting
+				= settings.byLowerName.get(command.toLowerCase(Locale.US));
+			if(setting != null) {
+				logRanCommand(command, rest);
+				if(setting.getValueClass() == Boolean.class) {
+					this.manager.execute(
+						String.format("set toggle %s", setting.getName()));
+				} else {
+					this.manager.execute(
+						String.format("set %s", setting.getName()));
+				}
+				return true;
+			}
+		} else if(argc.hasExactlyOne()) {
+			for(Settings.Setting setting : settings.allSettings) {
+				if(setting.getName().equals("logger")) {
+					continue;
+				}
+				if(setting.getName().equalsIgnoreCase(pair.getA())) {
+					logRanCommand(command, rest);
+					try {
+						this.manager.execute(String.format(
+							"set %s %s", setting.getName(), argc.getString()));
+					} catch(CommandNotEnoughArgumentsException ignored) {
+					} // The operation is safe
+					return true;
+				}
+			}
+		}
 
-        // If the command exists, then handle echoing the input
-        if (this.manager.getCommand(pair.getA()) != null) {
-            logRanCommand(command, rest);
-        }
+		// If the command exists, then handle echoing the input
+		if(this.manager.getCommand(pair.getA()) != null) {
+			logRanCommand(command, rest);
+		}
 
-        return this.manager.execute(pair);
-    }
+		return this.manager.execute(pair);
+	}
 
-    @Override
-    public void onPreTabComplete(TabCompleteEvent event) {
-        if (!settings.prefixControl.value) {
-            return;
-        }
-        String prefix = event.prefix;
-        String commandPrefix = settings.prefix.value;
-        if (!prefix.startsWith(commandPrefix)) {
-            return;
-        }
-        String msg = prefix.substring(commandPrefix.length());
-        List<ICommandArgument> args = CommandArguments.from(msg, true);
-        Stream<String> stream = tabComplete(msg);
-        if (args.size() == 1) {
-            stream = stream.map(x -> commandPrefix + x);
-        }
-        event.completions = stream.toArray(String[]::new);
-    }
+	@Override
+	public void onPreTabComplete(TabCompleteEvent event) {
+		if(!settings.prefixControl.value) {
+			return;
+		}
+		String prefix        = event.prefix;
+		String commandPrefix = settings.prefix.value;
+		if(!prefix.startsWith(commandPrefix)) {
+			return;
+		}
+		String msg                  = prefix.substring(commandPrefix.length());
+		List<ICommandArgument> args = CommandArguments.from(msg, true);
+		Stream<String> stream       = tabComplete(msg);
+		if(args.size() == 1) {
+			stream = stream.map(x -> commandPrefix + x);
+		}
+		event.completions = stream.toArray(String[] ::new);
+	}
 
-    public Stream<String> tabComplete(String msg) {
-        try {
-            List<ICommandArgument> args = CommandArguments.from(msg, true);
-            ArgConsumer argc = new ArgConsumer(this.manager, args);
-            if (argc.hasAtMost(2)) {
-                if (argc.hasExactly(1)) {
-                    return new TabCompleteHelper()
-                            .addCommands(this.manager)
-                            .addSettings()
-                            .filterPrefix(argc.getString())
-                            .stream();
-                }
-                Settings.Setting setting = settings.byLowerName.get(argc.getString().toLowerCase(Locale.US));
-                if (setting != null) {
-                    if (setting.getValueClass() == Boolean.class) {
-                        TabCompleteHelper helper = new TabCompleteHelper();
-                        if ((Boolean) setting.value) {
-                            helper.append("true", "false");
-                        } else {
-                            helper.append("false", "true");
-                        }
-                        return helper.filterPrefix(argc.getString()).stream();
-                    } else {
-                        return Stream.of(SettingsUtil.settingValueToString(setting));
-                    }
-                }
-            }
-            return this.manager.tabComplete(msg);
-        } catch (CommandNotEnoughArgumentsException ignored) { // Shouldn't happen, the operation is safe
-            return Stream.empty();
-        }
-    }
+	public Stream<String> tabComplete(String msg) {
+		try {
+			List<ICommandArgument> args = CommandArguments.from(msg, true);
+			ArgConsumer argc            = new ArgConsumer(this.manager, args);
+			if(argc.hasAtMost(2)) {
+				if(argc.hasExactly(1)) {
+					return new TabCompleteHelper()
+						.addCommands(this.manager)
+						.addSettings()
+						.filterPrefix(argc.getString())
+						.stream();
+				}
+				Settings.Setting setting = settings.byLowerName.get(
+					argc.getString().toLowerCase(Locale.US));
+				if(setting != null) {
+					if(setting.getValueClass() == Boolean.class) {
+						TabCompleteHelper helper = new TabCompleteHelper();
+						if((Boolean)setting.value) {
+							helper.append("true", "false");
+						} else {
+							helper.append("false", "true");
+						}
+						return helper.filterPrefix(argc.getString()).stream();
+					} else {
+						return Stream.of(
+							SettingsUtil.settingValueToString(setting));
+					}
+				}
+			}
+			return this.manager.tabComplete(msg);
+		} catch(CommandNotEnoughArgumentsException
+				ignored) { // Shouldn't happen, the operation is safe
+			return Stream.empty();
+		}
+	}
 }

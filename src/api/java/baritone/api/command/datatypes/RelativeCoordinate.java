@@ -25,40 +25,46 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public enum RelativeCoordinate implements IDatatypePost<Double, Double> {
-    INSTANCE;
-    private static Pattern PATTERN = Pattern.compile("^(~?)([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)([k-k]?)|)$");
+	INSTANCE;
+	private static Pattern PATTERN
+		= Pattern.compile("^(~?)([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)([k-k]?)|)$");
 
-    @Override
-    public Double apply(IDatatypeContext ctx, Double origin) throws CommandException {
-        if (origin == null) {
-            origin = 0.0D;
-        }
+	@Override
+	public Double apply(IDatatypeContext ctx, Double origin)
+		throws CommandException {
+		if(origin == null) {
+			origin = 0.0D;
+		}
 
-        Matcher matcher = PATTERN.matcher(ctx.getConsumer().getString());
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("pattern doesn't match");
-        }
+		Matcher matcher = PATTERN.matcher(ctx.getConsumer().getString());
+		if(!matcher.matches()) {
+			throw new IllegalArgumentException("pattern doesn't match");
+		}
 
-        boolean isRelative = !matcher.group(1).isEmpty();
+		boolean isRelative = !matcher.group(1).isEmpty();
 
-        double offset = matcher.group(2).isEmpty() ? 0 : Double.parseDouble(matcher.group(2).replaceAll("k", ""));
+		double offset
+			= matcher.group(2).isEmpty()
+				  ? 0
+				  : Double.parseDouble(matcher.group(2).replaceAll("k", ""));
 
-        if (matcher.group(2).contains("k")) {
-            offset *= 1000;
-        }
+		if(matcher.group(2).contains("k")) {
+			offset *= 1000;
+		}
 
-        if (isRelative) {
-            return origin + offset;
-        }
-        return offset;
-    }
+		if(isRelative) {
+			return origin + offset;
+		}
+		return offset;
+	}
 
-    @Override
-    public Stream<String> tabComplete(IDatatypeContext ctx) throws CommandException {
-        final IArgConsumer consumer = ctx.getConsumer();
-        if (!consumer.has(2) && consumer.getString().matches("^(~|$)")) {
-            return Stream.of("~");
-        }
-        return Stream.empty();
-    }
+	@Override
+	public Stream<String> tabComplete(IDatatypeContext ctx)
+		throws CommandException {
+		final IArgConsumer consumer = ctx.getConsumer();
+		if(!consumer.has(2) && consumer.getString().matches("^(~|$)")) {
+			return Stream.of("~");
+		}
+		return Stream.empty();
+	}
 }

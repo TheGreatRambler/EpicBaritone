@@ -35,149 +35,164 @@ import java.util.*;
 
 public class ContainerMemory implements IContainerMemory {
 
-    private final Path saveTo;
-    /**
-     * The current remembered inventories
-     */
-    private final Map<BlockPos, RememberedInventory> inventories = new HashMap<>();
+	private final Path saveTo;
+	/**
+	 * The current remembered inventories
+	 */
+	private final Map<BlockPos, RememberedInventory> inventories
+		= new HashMap<>();
 
+	public ContainerMemory(Path saveTo) {
+		this.saveTo = saveTo;
+		try {
+			read(Files.readAllBytes(saveTo));
+		} catch(NoSuchFileException ignored) {
+			inventories.clear();
+		} catch(Exception ex) {
+			ex.printStackTrace();
+			inventories.clear();
+		}
+	}
 
-    public ContainerMemory(Path saveTo) {
-        this.saveTo = saveTo;
-        try {
-            read(Files.readAllBytes(saveTo));
-        } catch (NoSuchFileException ignored) {
-            inventories.clear();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            inventories.clear();
-        }
-    }
+	private void read(byte[] bytes) throws IOException {
+		PacketBuffer in = new PacketBuffer(Unpooled.wrappedBuffer(bytes));
+		int chests      = in.readInt();
+		for(int i = 0; i < chests; i++) {
+			int x                   = in.readInt();
+			int y                   = in.readInt();
+			int z                   = in.readInt();
+			RememberedInventory rem = new RememberedInventory();
+			rem.items.addAll(readItemStacks(in));
+			rem.size     = rem.items.size();
+			rem.windowId = -1;
+			if(rem.items.isEmpty()) {
+				continue; // this only happens if the list has no elements, not
+						  // if the list has elements that are all empty item
+						  // stacks
+			}
+			inventories.put(new BlockPos(x, y, z), rem);
+		}
+	}
 
-    private void read(byte[] bytes) throws IOException {
-        PacketBuffer in = new PacketBuffer(Unpooled.wrappedBuffer(bytes));
-        int chests = in.readInt();
-        for (int i = 0; i < chests; i++) {
-            int x = in.readInt();
-            int y = in.readInt();
-            int z = in.readInt();
-            RememberedInventory rem = new RememberedInventory();
-            rem.items.addAll(readItemStacks(in));
-            rem.size = rem.items.size();
-            rem.windowId = -1;
-            if (rem.items.isEmpty()) {
-                continue; // this only happens if the list has no elements, not if the list has elements that are all empty item stacks
-            }
-            inventories.put(new BlockPos(x, y, z), rem);
-        }
-    }
+	public synchronized void save() throws IOException {
+		if(!Baritone.settings().containerMemory.value) {
+			return;
+		}
+		ByteBuf buf      = Unpooled.buffer(0, Integer.MAX_VALUE);
+		PacketBuffer out = new PacketBuffer(buf);
+		out.writeInt(inventories.size());
+		for(Map.Entry<BlockPos, RememberedInventory> entry :
+			inventories.entrySet()) {
+			out = new PacketBuffer(out.writeInt(entry.getKey().getX()));
+			out = new PacketBuffer(out.writeInt(entry.getKey().getY()));
+			out = new PacketBuffer(out.writeInt(entry.getKey().getZ()));
+			out = writeItemStacks(entry.getValue().getContents(), out);
+		}
+		Files.write(saveTo, out.array());
+	}
 
-    public synchronized void save() throws IOException {
-        if (!Baritone.settings().containerMemory.value) {
-            return;
-        }
-        ByteBuf buf = Unpooled.buffer(0, Integer.MAX_VALUE);
-        PacketBuffer out = new PacketBuffer(buf);
-        out.writeInt(inventories.size());
-        for (Map.Entry<BlockPos, RememberedInventory> entry : inventories.entrySet()) {
-            out = new PacketBuffer(out.writeInt(entry.getKey().getX()));
-            out = new PacketBuffer(out.writeInt(entry.getKey().getY()));
-            out = new PacketBuffer(out.writeInt(entry.getKey().getZ()));
-            out = writeItemStacks(entry.getValue().getContents(), out);
-        }
-        Files.write(saveTo, out.array());
-    }
+	public synchronized void setup(BlockPos pos, int windowId, int slotCount) {
+		RememberedInventory inventory
+			= inventories.computeIfAbsent(pos, x -> new RememberedInventory());
+		inventory.windowId = windowId;
+		inventory.size     = slotCount;
+	}
 
-    public synchronized void setup(BlockPos pos, int windowId, int slotCount) {
-        RememberedInventory inventory = inventories.computeIfAbsent(pos, x -> new RememberedInventory());
-        inventory.windowId = windowId;
-        inventory.size = slotCount;
-    }
+	public synchronized Optional<RememberedInventory> getInventoryFromWindow(
+		int windowId) {
+		return inventories.values()
+			.stream()
+			.filter(i -> i.windowId == windowId)
+			.findFirst();
+	}
 
-    public synchronized Optional<RememberedInventory> getInventoryFromWindow(int windowId) {
-        return inventories.values().stream().filter(i -> i.windowId == windowId).findFirst();
-    }
+	@Override
+	public final synchronized RememberedInventory getInventoryByPos(
+		BlockPos pos) {
+		return inventories.get(pos);
+	}
 
-    @Override
-    public final synchronized RememberedInventory getInventoryByPos(BlockPos pos) {
-        return inventories.get(pos);
-    }
+	@Override
+	public final synchronized Map<BlockPos, IRememberedInventory>
+	getRememberedInventories() {
+		// make a copy since this map is modified from the packet thread
+		return new HashMap<>(inventories);
+	}
 
-    @Override
-    public final synchronized Map<BlockPos, IRememberedInventory> getRememberedInventories() {
-        // make a copy since this map is modified from the packet thread
-        return new HashMap<>(inventories);
-    }
+	public static List<ItemStack> readItemStacks(byte[] bytes)
+		throws IOException {
+		PacketBuffer in = new PacketBuffer(Unpooled.wrappedBuffer(bytes));
+		return readItemStacks(in);
+	}
 
-    public static List<ItemStack> readItemStacks(byte[] bytes) throws IOException {
-        PacketBuffer in = new PacketBuffer(Unpooled.wrappedBuffer(bytes));
-        return readItemStacks(in);
-    }
+	public static List<ItemStack> readItemStacks(PacketBuffer in)
+		throws IOException {
+		int count              = in.readInt();
+		List<ItemStack> result = new ArrayList<>();
+		for(int i = 0; i < count; i++) {
+			result.add(in.readItemStack());
+		}
+		return result;
+	}
 
-    public static List<ItemStack> readItemStacks(PacketBuffer in) throws IOException {
-        int count = in.readInt();
-        List<ItemStack> result = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            result.add(in.readItemStack());
-        }
-        return result;
-    }
+	public static byte[] writeItemStacks(List<ItemStack> write) {
+		ByteBuf buf      = Unpooled.buffer(0, Integer.MAX_VALUE);
+		PacketBuffer out = new PacketBuffer(buf);
+		out              = writeItemStacks(write, out);
+		return out.array();
+	}
 
-    public static byte[] writeItemStacks(List<ItemStack> write) {
-        ByteBuf buf = Unpooled.buffer(0, Integer.MAX_VALUE);
-        PacketBuffer out = new PacketBuffer(buf);
-        out = writeItemStacks(write, out);
-        return out.array();
-    }
+	public static PacketBuffer writeItemStacks(
+		List<ItemStack> write, PacketBuffer out2) {
+		PacketBuffer out = out2; // avoid reassigning an argument LOL
+		out              = new PacketBuffer(out.writeInt(write.size()));
+		for(ItemStack stack : write) {
+			out = out.writeItemStack(stack);
+		}
+		return out;
+	}
 
-    public static PacketBuffer writeItemStacks(List<ItemStack> write, PacketBuffer out2) {
-        PacketBuffer out = out2; // avoid reassigning an argument LOL
-        out = new PacketBuffer(out.writeInt(write.size()));
-        for (ItemStack stack : write) {
-            out = out.writeItemStack(stack);
-        }
-        return out;
-    }
+	/**
+	 * An inventory that we are aware of.
+	 * <p>
+	 * Associated with a {@link BlockPos} in {@link
+	 * ContainerMemory#inventories}.
+	 */
+	public static class RememberedInventory implements IRememberedInventory {
 
-    /**
-     * An inventory that we are aware of.
-     * <p>
-     * Associated with a {@link BlockPos} in {@link ContainerMemory#inventories}.
-     */
-    public static class RememberedInventory implements IRememberedInventory {
+		/**
+		 * The list of items in the inventory
+		 */
+		private final List<ItemStack> items;
 
-        /**
-         * The list of items in the inventory
-         */
-        private final List<ItemStack> items;
+		/**
+		 * The last known window ID of the inventory
+		 */
+		private int windowId;
 
-        /**
-         * The last known window ID of the inventory
-         */
-        private int windowId;
+		/**
+		 * The size of the inventory
+		 */
+		private int size;
 
-        /**
-         * The size of the inventory
-         */
-        private int size;
+		private RememberedInventory() {
+			this.items = new ArrayList<>();
+		}
 
-        private RememberedInventory() {
-            this.items = new ArrayList<>();
-        }
+		@Override
+		public final List<ItemStack> getContents() {
+			return Collections.unmodifiableList(this.items);
+		}
 
-        @Override
-        public final List<ItemStack> getContents() {
-            return Collections.unmodifiableList(this.items);
-        }
+		@Override
+		public final int getSize() {
+			return this.size;
+		}
 
-        @Override
-        public final int getSize() {
-            return this.size;
-        }
-
-        public void updateFromOpenWindow(IPlayerContext ctx) {
-            items.clear();
-            items.addAll(ctx.player().openContainer.getInventory().subList(0, size));
-        }
-    }
+		public void updateFromOpenWindow(IPlayerContext ctx) {
+			items.clear();
+			items.addAll(
+				ctx.player().openContainer.getInventory().subList(0, size));
+		}
+	}
 }

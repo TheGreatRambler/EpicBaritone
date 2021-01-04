@@ -28,34 +28,32 @@ import java.util.stream.Stream;
 
 public class ReloadAllCommand extends Command {
 
-    public ReloadAllCommand(IBaritone baritone) {
-        super(baritone, "reloadall");
-    }
+	public ReloadAllCommand(IBaritone baritone) {
+		super(baritone, "reloadall");
+	}
 
-    @Override
-    public void execute(String label, IArgConsumer args) throws CommandException {
-        args.requireMax(0);
-        ctx.worldData().getCachedWorld().reloadAllFromDisk();
-        logDirect("Reloaded");
-    }
+	@Override
+	public void execute(String label, IArgConsumer args)
+		throws CommandException {
+		args.requireMax(0);
+		ctx.worldData().getCachedWorld().reloadAllFromDisk();
+		logDirect("Reloaded");
+	}
 
-    @Override
-    public Stream<String> tabComplete(String label, IArgConsumer args) {
-        return Stream.empty();
-    }
+	@Override
+	public Stream<String> tabComplete(String label, IArgConsumer args) {
+		return Stream.empty();
+	}
 
-    @Override
-    public String getShortDesc() {
-        return "Reloads Baritone's cache for this world";
-    }
+	@Override
+	public String getShortDesc() {
+		return "Reloads Baritone's cache for this world";
+	}
 
-    @Override
-    public List<String> getLongDesc() {
-        return Arrays.asList(
-                "The reloadall command reloads Baritone's world cache.",
-                "",
-                "Usage:",
-                "> reloadall"
-        );
-    }
+	@Override
+	public List<String> getLongDesc() {
+		return Arrays.asList(
+			"The reloadall command reloads Baritone's world cache.", "",
+			"Usage:", "> reloadall");
+	}
 }

@@ -26,9 +26,10 @@ import net.minecraft.util.math.BlockPos;
  */
 public interface IBlockTypeAccess {
 
-    BlockState getBlock(int x, int y, int z);
+	BlockState getBlock(int x, int y, int z);
 
-    default BlockState getBlock(BlockPos pos) {
-        return getBlock(pos.getX(), pos.getY(), pos.getZ());
-    }
+default BlockState
+	getBlock(BlockPos pos) {
+		return getBlock(pos.getX(), pos.getY(), pos.getZ());
+	}
 }

@@ -26,32 +26,33 @@ import net.minecraft.util.math.vector.Matrix4f;
  */
 public final class RenderEvent {
 
-    /**
-     * The current render partial ticks
-     */
-    private final float partialTicks;
+	/**
+	 * The current render partial ticks
+	 */
+	private final float partialTicks;
 
-    private final Matrix4f projectionMatrix;
-    private final MatrixStack modelViewStack;
+	private final Matrix4f projectionMatrix;
+	private final MatrixStack modelViewStack;
 
-    public RenderEvent(float partialTicks, MatrixStack modelViewStack, Matrix4f projectionMatrix) {
-        this.partialTicks = partialTicks;
-        this.modelViewStack = modelViewStack;
-        this.projectionMatrix = projectionMatrix;
-    }
+	public RenderEvent(float partialTicks, MatrixStack modelViewStack,
+		Matrix4f projectionMatrix) {
+		this.partialTicks     = partialTicks;
+		this.modelViewStack   = modelViewStack;
+		this.projectionMatrix = projectionMatrix;
+	}
 
-    /**
-     * @return The current render partial ticks
-     */
-    public final float getPartialTicks() {
-        return this.partialTicks;
-    }
+	/**
+	 * @return The current render partial ticks
+	 */
+	public final float getPartialTicks() {
+		return this.partialTicks;
+	}
 
-    public MatrixStack getModelViewStack() {
-        return this.modelViewStack;
-    }
+	public MatrixStack getModelViewStack() {
+		return this.modelViewStack;
+	}
 
-    public Matrix4f getProjectionMatrix() {
-        return this.projectionMatrix;
-    }
+	public Matrix4f getProjectionMatrix() {
+		return this.projectionMatrix;
+	}
 }

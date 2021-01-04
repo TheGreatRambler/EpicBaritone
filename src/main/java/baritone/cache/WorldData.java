@@ -29,55 +29,58 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 /**
- * Data about a world, from baritone's point of view. Includes cached chunks, waypoints, and map data.
+ * Data about a world, from baritone's point of view. Includes cached chunks,
+ * waypoints, and map data.
  *
  * @author leijurv
  */
 public class WorldData implements IWorldData {
 
-    public final CachedWorld cache;
-    private final WaypointCollection waypoints;
-    private final ContainerMemory containerMemory;
-    //public final MapData map;
-    public final Path directory;
-    public final RegistryKey<World> dimension;
+	public final CachedWorld cache;
+	private final WaypointCollection waypoints;
+	private final ContainerMemory containerMemory;
+	// public final MapData map;
+	public final Path directory;
+	public final RegistryKey<World> dimension;
 
-    WorldData(Path directory, RegistryKey<World> dimension) {
-        this.directory = directory;
-        this.cache = new CachedWorld(directory.resolve("cache"), dimension);
-        this.waypoints = new WaypointCollection(directory.resolve("waypoints"));
-        this.containerMemory = new ContainerMemory(directory.resolve("containers"));
-        this.dimension = dimension;
-    }
+	WorldData(Path directory, RegistryKey<World> dimension) {
+		this.directory = directory;
+		this.cache     = new CachedWorld(directory.resolve("cache"), dimension);
+		this.waypoints = new WaypointCollection(directory.resolve("waypoints"));
+		this.containerMemory
+			= new ContainerMemory(directory.resolve("containers"));
+		this.dimension = dimension;
+	}
 
-    public void onClose() {
-        Baritone.getExecutor().execute(() -> {
-            System.out.println("Started saving the world in a new thread");
-            cache.save();
-        });
-        Baritone.getExecutor().execute(() -> {
-            System.out.println("Started saving saved containers in a new thread");
-            try {
-                containerMemory.save();
-            } catch (IOException e) {
-                e.printStackTrace();
-                System.out.println("Failed to save saved containers");
-            }
-        });
-    }
+	public void onClose() {
+		Baritone.getExecutor().execute(() -> {
+			System.out.println("Started saving the world in a new thread");
+			cache.save();
+		});
+		Baritone.getExecutor().execute(() -> {
+			System.out.println(
+				"Started saving saved containers in a new thread");
+			try {
+				containerMemory.save();
+			} catch(IOException e) {
+				e.printStackTrace();
+				System.out.println("Failed to save saved containers");
+			}
+		});
+	}
 
-    @Override
-    public ICachedWorld getCachedWorld() {
-        return this.cache;
-    }
+	@Override
+	public ICachedWorld getCachedWorld() {
+		return this.cache;
+	}
 
-    @Override
-    public IWaypointCollection getWaypoints() {
-        return this.waypoints;
-    }
+	@Override
+	public IWaypointCollection getWaypoints() {
+		return this.waypoints;
+	}
 
-    @Override
-    public IContainerMemory getContainerMemory() {
-        return this.containerMemory;
-    }
+	@Override
+	public IContainerMemory getContainerMemory() {
+		return this.containerMemory;
+	}
 }

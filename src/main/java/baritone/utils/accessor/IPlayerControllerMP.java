@@ -21,9 +21,9 @@ import net.minecraft.util.math.BlockPos;
 
 public interface IPlayerControllerMP {
 
-    void setIsHittingBlock(boolean isHittingBlock);
+	void setIsHittingBlock(boolean isHittingBlock);
 
-    BlockPos getCurrentBlock();
+	BlockPos getCurrentBlock();
 
-    void callSyncCurrentPlayItem();
+	void callSyncCurrentPlayItem();
 }

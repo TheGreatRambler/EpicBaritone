@@ -40,44 +40,41 @@ import static org.objectweb.asm.Opcodes.GETFIELD;
 @Mixin(LivingEntity.class)
 public abstract class MixinLivingEntity extends Entity {
 
-    /**
-     * Event called to override the movement direction when jumping
-     */
-    private RotationMoveEvent jumpRotationEvent;
+	/**
+	 * Event called to override the movement direction when jumping
+	 */
+	private RotationMoveEvent jumpRotationEvent;
 
-    public MixinLivingEntity(EntityType<?> entityTypeIn, World worldIn) {
-        super(entityTypeIn, worldIn);
-    }
+	public MixinLivingEntity(EntityType<?> entityTypeIn, World worldIn) {
+		super(entityTypeIn, worldIn);
+	}
 
-    @Inject(
-            method = "jump",
-            at = @At("HEAD")
-    )
-    private void preMoveRelative(CallbackInfo ci) {
-        // noinspection ConstantConditions
-        if (ClientPlayerEntity.class.isInstance(this)) {
-            IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer((ClientPlayerEntity) (Object) this);
-            if (baritone != null) {
-                this.jumpRotationEvent = new RotationMoveEvent(RotationMoveEvent.Type.JUMP, this.rotationYaw);
-                baritone.getGameEventHandler().onPlayerRotationMove(this.jumpRotationEvent);
-            }
-        }
-    }
+	@Inject(method = "jump", at = @At("HEAD"))
+	private void preMoveRelative(CallbackInfo ci) {
+		// noinspection ConstantConditions
+		if(ClientPlayerEntity.class.isInstance(this)) {
+			IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer(
+				(ClientPlayerEntity)(Object)this);
+			if(baritone != null) {
+				this.jumpRotationEvent = new RotationMoveEvent(
+					RotationMoveEvent.Type.JUMP, this.rotationYaw);
+				baritone.getGameEventHandler().onPlayerRotationMove(
+					this.jumpRotationEvent);
+			}
+		}
+	}
 
-    @Redirect(
-            method = "jump",
-            at = @At(
-                    value = "FIELD",
-                    opcode = GETFIELD,
-                    target = "net/minecraft/entity/LivingEntity.rotationYaw:F"
-            )
-    )
-    private float overrideYaw(LivingEntity self) {
-        if (self instanceof ClientPlayerEntity && BaritoneAPI.getProvider().getBaritoneForPlayer((ClientPlayerEntity) (Object) this) != null) {
-            return this.jumpRotationEvent.getYaw();
-        }
-        return self.rotationYaw;
-    }
-
-
+	@Redirect(method = "jump",
+		at           = @At(value = "FIELD", opcode = GETFIELD,
+            target = "net/minecraft/entity/LivingEntity.rotationYaw:F"))
+	private float
+	overrideYaw(LivingEntity self) {
+		if(self instanceof ClientPlayerEntity
+			&& BaritoneAPI.getProvider().getBaritoneForPlayer(
+				   (ClientPlayerEntity)(Object)this)
+				   != null) {
+			return this.jumpRotationEvent.getYaw();
+		}
+		return self.rotationYaw;
+	}
 }

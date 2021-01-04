@@ -149,7 +149,7 @@ public class MovementFancy extends Movement {
 					isFirstTick
 						? calcsFirstTick.put(angleAndSpeed, tickCalculations)
 						: calcsNotFirstTick.put(
-							angleAndSpeed, tickCalculations);
+							  angleAndSpeed, tickCalculations);
 				}
 			}
 		}
@@ -174,13 +174,13 @@ public class MovementFancy extends Movement {
 					+ ((0.6 * Math.pow(0.91, 2)) / 0.09)
 						  * (1 - Math.pow(0.91, t - 2))
 						  * (speed + (J / 0.91)
-							  - ((0.02 * M) / (0.6 * 0.91 * 0.09)));
+								- ((0.02 * M) / (0.6 * 0.91 * 0.09)));
 			} else {
 				return 1.546 * speed + J + ((0.02 * M) / 0.09) * (t - 2)
 					+ ((0.6 * Math.pow(0.91, 2)) / 0.09)
 						  * (1 - Math.pow(0.91, t - 2))
 						  * (speed * 0.6 + (J / 0.91)
-							  - ((0.02 * M) / (0.6 * 0.91 * 0.09)));
+								- ((0.02 * M) / (0.6 * 0.91 * 0.09)));
 			}
 		}
 	}
@@ -193,12 +193,12 @@ public class MovementFancy extends Movement {
 				return ((0.02 * M) / (0.09))
 					+ 0.6 * Math.pow(0.91, t)
 						  * (speed + (J / 0.91)
-							  - ((0.02 * M) / 0.6 * 0.91 * 0.09));
+								- ((0.02 * M) / 0.6 * 0.91 * 0.09));
 			} else {
 				return ((0.02 * M) / (0.09))
 					+ 0.6 * Math.pow(0.91, t)
 						  * (speed * 0.6 + (J / 0.91)
-							  - ((0.02 * M) / 0.6 * 0.91 * 0.09));
+								- ((0.02 * M) / 0.6 * 0.91 * 0.09));
 			}
 		}
 	}
@@ -367,7 +367,7 @@ public class MovementFancy extends Movement {
 		}
 		if(MovementHelper.avoidWalkingInto(adj)
 			&& !(adj.getFluidState().getFluid()
-					 instanceof WaterFluid)) { // magma sucks
+					   instanceof WaterFluid)) { // magma sucks
 			return;
 		}
 		if(!MovementHelper.fullyPassable(
@@ -415,9 +415,9 @@ public class MovementFancy extends Movement {
 				   destInto)) {
 				if(i <= 3 && context.allowParkourAscend && context.canSprint
 					&& MovementHelper.canWalkOn(
-						context.bsi, destX, y, destZ, destInto)
+						   context.bsi, destX, y, destZ, destInto)
 					&& checkOvershootSafety(
-						context.bsi, destX + xDiff, y + 1, destZ + zDiff)) {
+						   context.bsi, destX + xDiff, y + 1, destZ + zDiff)) {
 					res.x    = destX;
 					res.y    = y + 1;
 					res.z    = destZ;
@@ -431,7 +431,7 @@ public class MovementFancy extends Movement {
 			// farmland haha
 			if(landingOn.getBlock() != Blocks.FARMLAND
 				&& MovementHelper.canWalkOn(
-					context.bsi, destX, y - 1, destZ, landingOn)) {
+					   context.bsi, destX, y - 1, destZ, landingOn)) {
 				if(checkOvershootSafety(
 					   context.bsi, destX + xDiff, y, destZ + zDiff)) {
 					res.x = destX;

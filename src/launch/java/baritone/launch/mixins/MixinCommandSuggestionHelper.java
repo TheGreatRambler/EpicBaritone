@@ -43,58 +43,66 @@ import java.util.stream.Stream;
 @Mixin(CommandSuggestionHelper.class)
 public class MixinCommandSuggestionHelper {
 
-    @Shadow
-    @Final
-    private TextFieldWidget field_228095_d_;
+	@Shadow @Final private TextFieldWidget field_228095_d_;
 
-    @Shadow
-    @Final
-    private List<String> field_228103_l_;
+	@Shadow @Final private List<String> field_228103_l_;
 
-    @Shadow
-    private CompletableFuture<Suggestions> suggestionsFuture;
+	@Shadow private CompletableFuture<Suggestions> suggestionsFuture;
 
-    @Inject(
-            method = "init",
-            at = @At("HEAD"),
-            cancellable = true
-    )
-    private void preUpdateSuggestion(CallbackInfo ci) {
-        // Anything that is present in the input text before the cursor position
-        String prefix = this.field_228095_d_.getText().substring(0, Math.min(this.field_228095_d_.getText().length(), this.field_228095_d_.getCursorPosition()));
+	@Inject(method = "init", at = @At("HEAD"), cancellable = true)
+	private void preUpdateSuggestion(CallbackInfo ci) {
+		// Anything that is present in the input text before the cursor position
+		String prefix = this.field_228095_d_.getText().substring(
+			0, Math.min(this.field_228095_d_.getText().length(),
+				   this.field_228095_d_.getCursorPosition()));
 
-        TabCompleteEvent event = new TabCompleteEvent(prefix);
-        BaritoneAPI.getProvider().getPrimaryBaritone().getGameEventHandler().onPreTabComplete(event);
+		TabCompleteEvent event = new TabCompleteEvent(prefix);
+		BaritoneAPI.getProvider()
+			.getPrimaryBaritone()
+			.getGameEventHandler()
+			.onPreTabComplete(event);
 
-        if (event.isCancelled()) {
-            ci.cancel();
-            return;
-        }
+		if(event.isCancelled()) {
+			ci.cancel();
+			return;
+		}
 
-        if (event.completions != null) {
-            ci.cancel();
+		if(event.completions != null) {
+			ci.cancel();
 
-            // TODO: Support populating the command usage
-            this.field_228103_l_.clear();
+			// TODO: Support populating the command usage
+			this.field_228103_l_.clear();
 
-            if (event.completions.length == 0) {
-                this.suggestionsFuture = Suggestions.empty();
-            } else {
-                int offset = this.field_228095_d_.getText().endsWith(" ")
-                        ? this.field_228095_d_.getCursorPosition()
-                        : this.field_228095_d_.getText().lastIndexOf(" ") + 1; // If there is no space this is still 0 haha yes
+			if(event.completions.length == 0) {
+				this.suggestionsFuture = Suggestions.empty();
+			} else {
+				int offset
+					= this.field_228095_d_.getText().endsWith(" ")
+						  ? this.field_228095_d_.getCursorPosition()
+						  : this.field_228095_d_.getText().lastIndexOf(" ")
+								+ 1; // If there is no space this is still 0
+									 // haha yes
 
-                List<Suggestion> suggestionList = Stream.of(event.completions)
-                        .map(s -> new Suggestion(StringRange.between(offset, offset + s.length()), s))
-                        .collect(Collectors.toList());
+				List<Suggestion> suggestionList
+					= Stream.of(event.completions)
+						  .map(s
+							  -> new Suggestion(StringRange.between(offset,
+													offset + s.length()),
+								  s))
+						  .collect(Collectors.toList());
 
-                Suggestions suggestions = new Suggestions(
-                        StringRange.between(offset, offset + suggestionList.stream().mapToInt(s -> s.getText().length()).max().orElse(0)),
-                        suggestionList);
+				Suggestions suggestions = new Suggestions(
+					StringRange.between(
+						offset, offset
+									+ suggestionList.stream()
+										  .mapToInt(s -> s.getText().length())
+										  .max()
+										  .orElse(0)),
+					suggestionList);
 
-                this.suggestionsFuture = new CompletableFuture<>();
-                this.suggestionsFuture.complete(suggestions);
-            }
-        }
-    }
+				this.suggestionsFuture = new CompletableFuture<>();
+				this.suggestionsFuture.complete(suggestions);
+			}
+		}
+	}
 }

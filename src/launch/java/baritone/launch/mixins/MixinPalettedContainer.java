@@ -29,19 +29,17 @@ import org.spongepowered.asm.mixin.Shadow;
 @Mixin(PalettedContainer.class)
 public abstract class MixinPalettedContainer implements IPalettedContainer {
 
-    @Shadow
-    protected BitArray storage;
+	@Shadow protected BitArray storage;
 
-    @Shadow
-    protected IPalette<BlockState> palette;
+	@Shadow protected IPalette<BlockState> palette;
 
-    @Override
-    public BlockState getAtPalette(int index) {
-        return palette.get(index);
-    }
+	@Override
+	public BlockState getAtPalette(int index) {
+		return palette.get(index);
+	}
 
-    @Override
-    public int[] storageArray() {
-        return ((IBitArray) storage).toArray();
-    }
+	@Override
+	public int[] storageArray() {
+		return ((IBitArray)storage).toArray();
+	}
 }

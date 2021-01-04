@@ -28,34 +28,30 @@ import java.util.stream.Stream;
 
 public class GcCommand extends Command {
 
-    public GcCommand(IBaritone baritone) {
-        super(baritone, "gc");
-    }
+	public GcCommand(IBaritone baritone) {
+		super(baritone, "gc");
+	}
 
-    @Override
-    public void execute(String label, IArgConsumer args) throws CommandException {
-        args.requireMax(0);
-        System.gc();
-        logDirect("ok called System.gc()");
-    }
+	@Override
+	public void execute(String label, IArgConsumer args)
+		throws CommandException {
+		args.requireMax(0);
+		System.gc();
+		logDirect("ok called System.gc()");
+	}
 
-    @Override
-    public Stream<String> tabComplete(String label, IArgConsumer args) {
-        return Stream.empty();
-    }
+	@Override
+	public Stream<String> tabComplete(String label, IArgConsumer args) {
+		return Stream.empty();
+	}
 
-    @Override
-    public String getShortDesc() {
-        return "Call System.gc()";
-    }
+	@Override
+	public String getShortDesc() {
+		return "Call System.gc()";
+	}
 
-    @Override
-    public List<String> getLongDesc() {
-        return Arrays.asList(
-                "Calls System.gc().",
-                "",
-                "Usage:",
-                "> gc"
-        );
-    }
+	@Override
+	public List<String> getLongDesc() {
+		return Arrays.asList("Calls System.gc().", "", "Usage:", "> gc");
+	}
 }

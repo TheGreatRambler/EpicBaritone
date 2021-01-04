@@ -42,79 +42,91 @@ import java.util.function.Consumer;
  */
 public class WorldProvider implements IWorldProvider, Helper {
 
-    private static final Map<Path, WorldData> worldCache = new HashMap<>(); // this is how the bots have the same cached world
+	private static final Map<Path, WorldData> worldCache
+		= new HashMap<>(); // this is how the bots have the same cached world
 
-    private WorldData currentWorld;
+	private WorldData currentWorld;
 
-    @Override
-    public final WorldData getCurrentWorld() {
-        return this.currentWorld;
-    }
+	@Override
+	public final WorldData getCurrentWorld() {
+		return this.currentWorld;
+	}
 
-    /**
-     * Called when a new world is initialized to discover the
-     *
-     * @param world The world's Registry Data
-     */
-    public final void initWorld(RegistryKey<World> world) {
-        File directory;
-        File readme;
+	/**
+	 * Called when a new world is initialized to discover the
+	 *
+	 * @param world The world's Registry Data
+	 */
+	public final void initWorld(RegistryKey<World> world) {
+		File directory;
+		File readme;
 
-        IntegratedServer integratedServer = mc.getIntegratedServer();
+		IntegratedServer integratedServer = mc.getIntegratedServer();
 
-        // If there is an integrated server running (Aka Singleplayer) then do magic to find the world save file
-        if (mc.isSingleplayer()) {
-            directory = DimensionType.func_236031_a_(world, integratedServer.func_240776_a_(FolderName.field_237253_i_).toFile());
+		// If there is an integrated server running (Aka Singleplayer) then do
+		// magic to find the world save file
+		if(mc.isSingleplayer()) {
+			directory = DimensionType.func_236031_a_(world,
+				integratedServer.func_240776_a_(FolderName.field_237253_i_)
+					.toFile());
 
-            // Gets the "depth" of this directory relative the the game's run directory, 2 is the location of the world
-            if (directory.toPath().relativize(mc.gameDir.toPath()).getNameCount() != 2) {
-                // subdirectory of the main save directory for this world
-                directory = directory.getParentFile();
-            }
+			// Gets the "depth" of this directory relative the the game's run
+			// directory, 2 is the location of the world
+			if(directory.toPath().relativize(mc.gameDir.toPath()).getNameCount()
+				!= 2) {
+				// subdirectory of the main save directory for this world
+				directory = directory.getParentFile();
+			}
 
-            directory = new File(directory, "baritone");
-            readme = directory;
-        } else { // Otherwise, the server must be remote...
-            String folderName = mc.isConnectedToRealms() ? "realms" : mc.getCurrentServerData().serverIP;
-            if (SystemUtils.IS_OS_WINDOWS) {
-                folderName = folderName.replace(":", "_");
-            }
-            directory = new File(Baritone.getDir(), folderName);
-            readme = Baritone.getDir();
-        }
+			directory = new File(directory, "baritone");
+			readme    = directory;
+		} else { // Otherwise, the server must be remote...
+			String folderName = mc.isConnectedToRealms()
+									? "realms"
+									: mc.getCurrentServerData().serverIP;
+			if(SystemUtils.IS_OS_WINDOWS) {
+				folderName = folderName.replace(":", "_");
+			}
+			directory = new File(Baritone.getDir(), folderName);
+			readme    = Baritone.getDir();
+		}
 
-        // lol wtf is this baritone folder in my minecraft save?
-        try (FileOutputStream out = new FileOutputStream(new File(readme, "readme.txt"))) {
-            // good thing we have a readme
-            out.write("https://github.com/cabaletta/baritone\n".getBytes());
-        } catch (IOException ignored) {}
+		// lol wtf is this baritone folder in my minecraft save?
+		try(FileOutputStream out
+			= new FileOutputStream(new File(readme, "readme.txt"))) {
+			// good thing we have a readme
+			out.write("https://github.com/cabaletta/baritone\n".getBytes());
+		} catch(IOException ignored) {
+		}
 
-        // We will actually store the world data in a subfolder: "DIM<id>"
-        Path dir = DimensionType.func_236031_a_(world, directory).toPath();
-        if (!Files.exists(dir)) {
-            try {
-                Files.createDirectories(dir);
-            } catch (IOException ignored) {}
-        }
+		// We will actually store the world data in a subfolder: "DIM<id>"
+		Path dir = DimensionType.func_236031_a_(world, directory).toPath();
+		if(!Files.exists(dir)) {
+			try {
+				Files.createDirectories(dir);
+			} catch(IOException ignored) {
+			}
+		}
 
-        System.out.println("Baritone world data dir: " + dir);
-        synchronized (worldCache) {
-            this.currentWorld = worldCache.computeIfAbsent(dir, d -> new WorldData(d, world));
-        }
-    }
+		System.out.println("Baritone world data dir: " + dir);
+		synchronized(worldCache) {
+			this.currentWorld
+				= worldCache.computeIfAbsent(dir, d -> new WorldData(d, world));
+		}
+	}
 
-    public final void closeWorld() {
-        WorldData world = this.currentWorld;
-        this.currentWorld = null;
-        if (world == null) {
-            return;
-        }
-        world.onClose();
-    }
+	public final void closeWorld() {
+		WorldData world   = this.currentWorld;
+		this.currentWorld = null;
+		if(world == null) {
+			return;
+		}
+		world.onClose();
+	}
 
-    public final void ifWorldLoaded(Consumer<WorldData> currentWorldConsumer) {
-        if (this.currentWorld != null) {
-            currentWorldConsumer.accept(this.currentWorld);
-        }
-    }
+	public final void ifWorldLoaded(Consumer<WorldData> currentWorldConsumer) {
+		if(this.currentWorld != null) {
+			currentWorldConsumer.accept(this.currentWorld);
+		}
+	}
 }

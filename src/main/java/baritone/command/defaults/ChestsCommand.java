@@ -36,48 +36,50 @@ import java.util.stream.Stream;
 
 public class ChestsCommand extends Command {
 
-    public ChestsCommand(IBaritone baritone) {
-        super(baritone, "chests");
-    }
+	public ChestsCommand(IBaritone baritone) {
+		super(baritone, "chests");
+	}
 
-    @Override
-    public void execute(String label, IArgConsumer args) throws CommandException {
-        args.requireMax(0);
-        Set<Map.Entry<BlockPos, IRememberedInventory>> entries =
-                ctx.worldData().getContainerMemory().getRememberedInventories().entrySet();
-        if (entries.isEmpty()) {
-            throw new CommandInvalidStateException("No remembered inventories");
-        }
-        for (Map.Entry<BlockPos, IRememberedInventory> entry : entries) {
-            // betterblockpos has censoring
-            BetterBlockPos pos = new BetterBlockPos(entry.getKey());
-            IRememberedInventory inv = entry.getValue();
-            logDirect(pos.toString());
-            for (ItemStack item : inv.getContents()) {
-                IFormattableTextComponent component = (IFormattableTextComponent) item.getTextComponent();
-                component.appendString(String.format(" x %d", item.getCount()));
-                logDirect(component);
-            }
-        }
-    }
+	@Override
+	public void execute(String label, IArgConsumer args)
+		throws CommandException {
+		args.requireMax(0);
+		Set<Map.Entry<BlockPos, IRememberedInventory>> entries
+			= ctx.worldData()
+				  .getContainerMemory()
+				  .getRememberedInventories()
+				  .entrySet();
+		if(entries.isEmpty()) {
+			throw new CommandInvalidStateException("No remembered inventories");
+		}
+		for(Map.Entry<BlockPos, IRememberedInventory> entry : entries) {
+			// betterblockpos has censoring
+			BetterBlockPos pos       = new BetterBlockPos(entry.getKey());
+			IRememberedInventory inv = entry.getValue();
+			logDirect(pos.toString());
+			for(ItemStack item : inv.getContents()) {
+				IFormattableTextComponent component
+					= (IFormattableTextComponent)item.getTextComponent();
+				component.appendString(String.format(" x %d", item.getCount()));
+				logDirect(component);
+			}
+		}
+	}
 
-    @Override
-    public Stream<String> tabComplete(String label, IArgConsumer args) {
-        return Stream.empty();
-    }
+	@Override
+	public Stream<String> tabComplete(String label, IArgConsumer args) {
+		return Stream.empty();
+	}
 
-    @Override
-    public String getShortDesc() {
-        return "Display remembered inventories";
-    }
+	@Override
+	public String getShortDesc() {
+		return "Display remembered inventories";
+	}
 
-    @Override
-    public List<String> getLongDesc() {
-        return Arrays.asList(
-                "The chests command lists remembered inventories, I guess?",
-                "",
-                "Usage:",
-                "> chests"
-        );
-    }
+	@Override
+	public List<String> getLongDesc() {
+		return Arrays.asList(
+			"The chests command lists remembered inventories, I guess?", "",
+			"Usage:", "> chests");
+	}
 }

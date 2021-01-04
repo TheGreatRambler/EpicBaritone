@@ -23,47 +23,43 @@ import net.minecraft.util.math.BlockPos;
 
 public class GoalNear implements Goal, IGoalRenderPos {
 
-    private final int x;
-    private final int y;
-    private final int z;
-    private final int rangeSq;
+	private final int x;
+	private final int y;
+	private final int z;
+	private final int rangeSq;
 
-    public GoalNear(BlockPos pos, int range) {
-        this.x = pos.getX();
-        this.y = pos.getY();
-        this.z = pos.getZ();
-        this.rangeSq = range * range;
-    }
+	public GoalNear(BlockPos pos, int range) {
+		this.x       = pos.getX();
+		this.y       = pos.getY();
+		this.z       = pos.getZ();
+		this.rangeSq = range * range;
+	}
 
-    @Override
-    public boolean isInGoal(int x, int y, int z) {
-        int xDiff = x - this.x;
-        int yDiff = y - this.y;
-        int zDiff = z - this.z;
-        return xDiff * xDiff + yDiff * yDiff + zDiff * zDiff <= rangeSq;
-    }
+	@Override
+	public boolean isInGoal(int x, int y, int z) {
+		int xDiff = x - this.x;
+		int yDiff = y - this.y;
+		int zDiff = z - this.z;
+		return xDiff * xDiff + yDiff * yDiff + zDiff * zDiff <= rangeSq;
+	}
 
-    @Override
-    public double heuristic(int x, int y, int z) {
-        int xDiff = x - this.x;
-        int yDiff = y - this.y;
-        int zDiff = z - this.z;
-        return GoalBlock.calculate(xDiff, yDiff, zDiff);
-    }
+	@Override
+	public double heuristic(int x, int y, int z) {
+		int xDiff = x - this.x;
+		int yDiff = y - this.y;
+		int zDiff = z - this.z;
+		return GoalBlock.calculate(xDiff, yDiff, zDiff);
+	}
 
-    @Override
-    public BlockPos getGoalPos() {
-        return new BlockPos(x, y, z);
-    }
+	@Override
+	public BlockPos getGoalPos() {
+		return new BlockPos(x, y, z);
+	}
 
-    @Override
-    public String toString() {
-        return String.format(
-                "GoalNear{x=%s, y=%s, z=%s, rangeSq=%d}",
-                SettingsUtil.maybeCensor(x),
-                SettingsUtil.maybeCensor(y),
-                SettingsUtil.maybeCensor(z),
-                rangeSq
-        );
-    }
+	@Override
+	public String toString() {
+		return String.format("GoalNear{x=%s, y=%s, z=%s, rangeSq=%d}",
+			SettingsUtil.maybeCensor(x), SettingsUtil.maybeCensor(y),
+			SettingsUtil.maybeCensor(z), rangeSq);
+	}
 }

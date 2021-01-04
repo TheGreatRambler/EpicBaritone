@@ -42,64 +42,77 @@ import java.util.Map;
  */
 public class LaunchTesting {
 
-    public static void main(String[] args) {
-        Map<String, String> arguments = new HashMap<>();
+	public static void main(String[] args) {
+		Map<String, String> arguments = new HashMap<>();
 
-        hackNatives();
-        arguments.put("version", "BaritownedDeveloperEnvironment");
-        arguments.put("assetIndex", System.getenv("assetIndex"));
-        arguments.put("assetsDir", System.getenv().getOrDefault("assetDirectory", "assets"));
-        arguments.put("accessToken", "FML");
-        arguments.put("userProperties", "{}");
-        arguments.put("tweakClass", System.getenv("tweakClass"));
-        String password = System.getenv("password");
-        if (password != null && !password.isEmpty()) {
-            attemptLogin(arguments, System.getenv("username"), System.getenv("password"));
-        }
+		hackNatives();
+		arguments.put("version", "BaritownedDeveloperEnvironment");
+		arguments.put("assetIndex", System.getenv("assetIndex"));
+		arguments.put("assetsDir",
+			System.getenv().getOrDefault("assetDirectory", "assets"));
+		arguments.put("accessToken", "FML");
+		arguments.put("userProperties", "{}");
+		arguments.put("tweakClass", System.getenv("tweakClass"));
+		String password = System.getenv("password");
+		if(password != null && !password.isEmpty()) {
+			attemptLogin(arguments, System.getenv("username"),
+				System.getenv("password"));
+		}
 
-        List<String> argsArray = new ArrayList<>();
-        arguments.forEach((k, v) -> {
-            argsArray.add("--" + k);
-            argsArray.add(v);
-        });
+		List<String> argsArray = new ArrayList<>();
+		arguments.forEach((k, v) -> {
+			argsArray.add("--" + k);
+			argsArray.add(v);
+		});
 
-        Launch.main(argsArray.toArray(new String[0]));
-    }
+		Launch.main(argsArray.toArray(new String[0]));
+	}
 
-    private static void hackNatives() {
-        String paths = System.getProperty("java.library.path");
-        String nativesDir = System.getenv().get("nativesDirectory");
+	private static void hackNatives() {
+		String paths      = System.getProperty("java.library.path");
+		String nativesDir = System.getenv().get("nativesDirectory");
 
-        if (Strings.isNullOrEmpty(paths))
-            paths = nativesDir;
-        else
-            paths += File.pathSeparator + nativesDir;
+		if(Strings.isNullOrEmpty(paths))
+			paths = nativesDir;
+		else
+			paths += File.pathSeparator + nativesDir;
 
-        System.setProperty("java.library.path", paths);
+		System.setProperty("java.library.path", paths);
 
-        // hack the classloader now.
-        try {
-            final Field sysPathsField = ClassLoader.class.getDeclaredField("sys_paths");
-            sysPathsField.setAccessible(true);
-            sysPathsField.set(null, null);
-        } catch (Throwable ignored) {}
-    }
+		// hack the classloader now.
+		try {
+			final Field sysPathsField
+				= ClassLoader.class.getDeclaredField("sys_paths");
+			sysPathsField.setAccessible(true);
+			sysPathsField.set(null, null);
+		} catch(Throwable ignored) {
+		}
+	}
 
-    private static void attemptLogin(Map<String, String> argMap, String username, String password) {
-        YggdrasilUserAuthentication auth = (YggdrasilUserAuthentication) (new YggdrasilAuthenticationService(Proxy.NO_PROXY, "1")).createUserAuthentication(Agent.MINECRAFT);
-        auth.setUsername(username);
-        auth.setPassword(password);
+	private static void attemptLogin(
+		Map<String, String> argMap, String username, String password) {
+		YggdrasilUserAuthentication auth
+			= (YggdrasilUserAuthentication)(new YggdrasilAuthenticationService(
+												Proxy.NO_PROXY, "1"))
+				  .createUserAuthentication(Agent.MINECRAFT);
+		auth.setUsername(username);
+		auth.setPassword(password);
 
-        try {
-            auth.logIn();
-        } catch (AuthenticationException var4) {
-            throw new RuntimeException(var4);
-        }
+		try {
+			auth.logIn();
+		} catch(AuthenticationException var4) {
+			throw new RuntimeException(var4);
+		}
 
-        argMap.put("accessToken", auth.getAuthenticatedToken());
-        argMap.put("uuid", auth.getSelectedProfile().getId().toString().replace("-", ""));
-        argMap.put("username", auth.getSelectedProfile().getName());
-        argMap.put("userType", auth.getUserType().getName());
-        argMap.put("userProperties", (new GsonBuilder()).registerTypeAdapter(PropertyMap.class, new PropertyMap.Serializer()).create().toJson(auth.getUserProperties()));
-    }
+		argMap.put("accessToken", auth.getAuthenticatedToken());
+		argMap.put("uuid",
+			auth.getSelectedProfile().getId().toString().replace("-", ""));
+		argMap.put("username", auth.getSelectedProfile().getName());
+		argMap.put("userType", auth.getUserType().getName());
+		argMap.put("userProperties", (new GsonBuilder())
+										 .registerTypeAdapter(PropertyMap.class,
+											 new PropertyMap.Serializer())
+										 .create()
+										 .toJson(auth.getUserProperties()));
+	}
 }

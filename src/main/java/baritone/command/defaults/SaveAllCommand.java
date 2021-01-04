@@ -28,34 +28,32 @@ import java.util.stream.Stream;
 
 public class SaveAllCommand extends Command {
 
-    public SaveAllCommand(IBaritone baritone) {
-        super(baritone, "saveall");
-    }
+	public SaveAllCommand(IBaritone baritone) {
+		super(baritone, "saveall");
+	}
 
-    @Override
-    public void execute(String label, IArgConsumer args) throws CommandException {
-        args.requireMax(0);
-        ctx.worldData().getCachedWorld().save();
-        logDirect("Saved");
-    }
+	@Override
+	public void execute(String label, IArgConsumer args)
+		throws CommandException {
+		args.requireMax(0);
+		ctx.worldData().getCachedWorld().save();
+		logDirect("Saved");
+	}
 
-    @Override
-    public Stream<String> tabComplete(String label, IArgConsumer args) {
-        return Stream.empty();
-    }
+	@Override
+	public Stream<String> tabComplete(String label, IArgConsumer args) {
+		return Stream.empty();
+	}
 
-    @Override
-    public String getShortDesc() {
-        return "Saves Baritone's cache for this world";
-    }
+	@Override
+	public String getShortDesc() {
+		return "Saves Baritone's cache for this world";
+	}
 
-    @Override
-    public List<String> getLongDesc() {
-        return Arrays.asList(
-                "The saveall command saves Baritone's world cache.",
-                "",
-                "Usage:",
-                "> saveall"
-        );
-    }
+	@Override
+	public List<String> getLongDesc() {
+		return Arrays.asList(
+			"The saveall command saves Baritone's world cache.", "",
+			"Usage:", "> saveall");
+	}
 }

@@ -30,31 +30,31 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Entity.class)
 public class MixinEntity {
 
-    @Shadow
-    private float rotationYaw;
+	@Shadow private float rotationYaw;
 
-    float yawRestore;
+	float yawRestore;
 
-    @Inject(
-            method = "moveRelative",
-            at = @At("HEAD")
-    )
-    private void moveRelativeHead(CallbackInfo info) {
-        this.yawRestore = this.rotationYaw;
-        // noinspection ConstantConditions
-        if (!ClientPlayerEntity.class.isInstance(this) || BaritoneAPI.getProvider().getBaritoneForPlayer((ClientPlayerEntity) (Object) this) == null) {
-            return;
-        }
-        RotationMoveEvent motionUpdateRotationEvent = new RotationMoveEvent(RotationMoveEvent.Type.MOTION_UPDATE, this.rotationYaw);
-        BaritoneAPI.getProvider().getBaritoneForPlayer((ClientPlayerEntity) (Object) this).getGameEventHandler().onPlayerRotationMove(motionUpdateRotationEvent);
-        this.rotationYaw = motionUpdateRotationEvent.getYaw();
-    }
+	@Inject(method = "moveRelative", at = @At("HEAD"))
+	private void moveRelativeHead(CallbackInfo info) {
+		this.yawRestore = this.rotationYaw;
+		// noinspection ConstantConditions
+		if(!ClientPlayerEntity.class.isInstance(this)
+			|| BaritoneAPI.getProvider().getBaritoneForPlayer(
+				   (ClientPlayerEntity)(Object)this)
+				   == null) {
+			return;
+		}
+		RotationMoveEvent motionUpdateRotationEvent = new RotationMoveEvent(
+			RotationMoveEvent.Type.MOTION_UPDATE, this.rotationYaw);
+		BaritoneAPI.getProvider()
+			.getBaritoneForPlayer((ClientPlayerEntity)(Object)this)
+			.getGameEventHandler()
+			.onPlayerRotationMove(motionUpdateRotationEvent);
+		this.rotationYaw = motionUpdateRotationEvent.getYaw();
+	}
 
-    @Inject(
-            method = "moveRelative",
-            at = @At("RETURN")
-    )
-    private void moveRelativeReturn(CallbackInfo info) {
-        this.rotationYaw = this.yawRestore;
-    }
+	@Inject(method = "moveRelative", at = @At("RETURN"))
+	private void moveRelativeReturn(CallbackInfo info) {
+		this.rotationYaw = this.yawRestore;
+	}
 }

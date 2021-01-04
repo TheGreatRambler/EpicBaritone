@@ -35,81 +35,158 @@ import static org.lwjgl.opengl.GL11.*;
 
 public interface IRenderer {
 
-    Tessellator tessellator = Tessellator.getInstance();
-    BufferBuilder buffer = tessellator.getBuffer();
-    IEntityRenderManager renderManager = (IEntityRenderManager) Helper.mc.getRenderManager();
-    Settings settings = BaritoneAPI.getSettings();
+	Tessellator tessellator = Tessellator.getInstance();
+	BufferBuilder buffer    = tessellator.getBuffer();
+	IEntityRenderManager renderManager
+		= (IEntityRenderManager)Helper.mc.getRenderManager();
+	Settings settings = BaritoneAPI.getSettings();
 
-    static void glColor(Color color, float alpha) {
-        float[] colorComponents = color.getColorComponents(null);
-        RenderSystem.color4f(colorComponents[0], colorComponents[1], colorComponents[2], alpha);
-    }
+	static void glColor(Color color, float alpha) {
+		float[] colorComponents = color.getColorComponents(null);
+		RenderSystem.color4f(
+			colorComponents[0], colorComponents[1], colorComponents[2], alpha);
+	}
 
-    static void startLines(Color color, float alpha, float lineWidth, boolean ignoreDepth) {
-        RenderSystem.enableBlend();
-        RenderSystem.disableLighting();
-        RenderSystem.blendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
-        glColor(color, alpha);
-        RenderSystem.lineWidth(lineWidth);
-        RenderSystem.disableTexture();
-        RenderSystem.depthMask(false);
+	static void startLines(
+		Color color, float alpha, float lineWidth, boolean ignoreDepth) {
+		RenderSystem.enableBlend();
+		RenderSystem.disableLighting();
+		RenderSystem.blendFuncSeparate(
+			GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+		glColor(color, alpha);
+		RenderSystem.lineWidth(lineWidth);
+		RenderSystem.disableTexture();
+		RenderSystem.depthMask(false);
 
-        if (ignoreDepth) {
-            RenderSystem.disableDepthTest();
-        }
-    }
+		if(ignoreDepth) {
+			RenderSystem.disableDepthTest();
+		}
+	}
 
-    static void startLines(Color color, float lineWidth, boolean ignoreDepth) {
-        startLines(color, .4f, lineWidth, ignoreDepth);
-    }
+	static void startLines(Color color, float lineWidth, boolean ignoreDepth) {
+		startLines(color, .4f, lineWidth, ignoreDepth);
+	}
 
-    static void endLines(boolean ignoredDepth) {
-        if (ignoredDepth) {
-            RenderSystem.enableDepthTest();
-        }
+	static void endLines(boolean ignoredDepth) {
+		if(ignoredDepth) {
+			RenderSystem.enableDepthTest();
+		}
 
-        RenderSystem.depthMask(true);
-        RenderSystem.enableTexture();
-        RenderSystem.enableLighting();
-        RenderSystem.disableBlend();
-    }
+		RenderSystem.depthMask(true);
+		RenderSystem.enableTexture();
+		RenderSystem.enableLighting();
+		RenderSystem.disableBlend();
+	}
 
-    static void drawAABB(MatrixStack stack, AxisAlignedBB aabb) {
-        AxisAlignedBB toDraw = aabb.offset(-renderManager.renderPosX(), -renderManager.renderPosY(), -renderManager.renderPosZ());
+	static void drawAABB(MatrixStack stack, AxisAlignedBB aabb) {
+		AxisAlignedBB toDraw = aabb.offset(-renderManager.renderPosX(),
+			-renderManager.renderPosY(), -renderManager.renderPosZ());
 
-        Matrix4f matrix4f = stack.getLast().getMatrix();
-        buffer.begin(GL_LINES, DefaultVertexFormats.POSITION);
-        // bottom
-        buffer.pos(matrix4f, (float) toDraw.minX, (float) toDraw.minY, (float) toDraw.minZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.maxX, (float) toDraw.minY, (float) toDraw.minZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.maxX, (float) toDraw.minY, (float) toDraw.minZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.maxX, (float) toDraw.minY, (float) toDraw.maxZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.maxX, (float) toDraw.minY, (float) toDraw.maxZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.minX, (float) toDraw.minY, (float) toDraw.maxZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.minX, (float) toDraw.minY, (float) toDraw.maxZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.minX, (float) toDraw.minY, (float) toDraw.minZ).endVertex();
-        // top
-        buffer.pos(matrix4f, (float) toDraw.minX, (float) toDraw.maxY, (float) toDraw.minZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.maxX, (float) toDraw.maxY, (float) toDraw.minZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.maxX, (float) toDraw.maxY, (float) toDraw.minZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.maxX, (float) toDraw.maxY, (float) toDraw.maxZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.maxX, (float) toDraw.maxY, (float) toDraw.maxZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.minX, (float) toDraw.maxY, (float) toDraw.maxZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.minX, (float) toDraw.maxY, (float) toDraw.maxZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.minX, (float) toDraw.maxY, (float) toDraw.minZ).endVertex();
-        // corners
-        buffer.pos(matrix4f, (float) toDraw.minX, (float) toDraw.minY, (float) toDraw.minZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.minX, (float) toDraw.maxY, (float) toDraw.minZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.maxX, (float) toDraw.minY, (float) toDraw.minZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.maxX, (float) toDraw.maxY, (float) toDraw.minZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.maxX, (float) toDraw.minY, (float) toDraw.maxZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.maxX, (float) toDraw.maxY, (float) toDraw.maxZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.minX, (float) toDraw.minY, (float) toDraw.maxZ).endVertex();
-        buffer.pos(matrix4f, (float) toDraw.minX, (float) toDraw.maxY, (float) toDraw.maxZ).endVertex();
-        tessellator.draw();
-    }
+		Matrix4f matrix4f = stack.getLast().getMatrix();
+		buffer.begin(GL_LINES, DefaultVertexFormats.POSITION);
+		// bottom
+		buffer
+			.pos(matrix4f, (float)toDraw.minX, (float)toDraw.minY,
+				(float)toDraw.minZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.maxX, (float)toDraw.minY,
+				(float)toDraw.minZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.maxX, (float)toDraw.minY,
+				(float)toDraw.minZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.maxX, (float)toDraw.minY,
+				(float)toDraw.maxZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.maxX, (float)toDraw.minY,
+				(float)toDraw.maxZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.minX, (float)toDraw.minY,
+				(float)toDraw.maxZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.minX, (float)toDraw.minY,
+				(float)toDraw.maxZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.minX, (float)toDraw.minY,
+				(float)toDraw.minZ)
+			.endVertex();
+		// top
+		buffer
+			.pos(matrix4f, (float)toDraw.minX, (float)toDraw.maxY,
+				(float)toDraw.minZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.maxX, (float)toDraw.maxY,
+				(float)toDraw.minZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.maxX, (float)toDraw.maxY,
+				(float)toDraw.minZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.maxX, (float)toDraw.maxY,
+				(float)toDraw.maxZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.maxX, (float)toDraw.maxY,
+				(float)toDraw.maxZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.minX, (float)toDraw.maxY,
+				(float)toDraw.maxZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.minX, (float)toDraw.maxY,
+				(float)toDraw.maxZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.minX, (float)toDraw.maxY,
+				(float)toDraw.minZ)
+			.endVertex();
+		// corners
+		buffer
+			.pos(matrix4f, (float)toDraw.minX, (float)toDraw.minY,
+				(float)toDraw.minZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.minX, (float)toDraw.maxY,
+				(float)toDraw.minZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.maxX, (float)toDraw.minY,
+				(float)toDraw.minZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.maxX, (float)toDraw.maxY,
+				(float)toDraw.minZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.maxX, (float)toDraw.minY,
+				(float)toDraw.maxZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.maxX, (float)toDraw.maxY,
+				(float)toDraw.maxZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.minX, (float)toDraw.minY,
+				(float)toDraw.maxZ)
+			.endVertex();
+		buffer
+			.pos(matrix4f, (float)toDraw.minX, (float)toDraw.maxY,
+				(float)toDraw.maxZ)
+			.endVertex();
+		tessellator.draw();
+	}
 
-    static void drawAABB(MatrixStack stack, AxisAlignedBB aabb, double expand) {
-        drawAABB(stack, aabb.grow(expand, expand, expand));
-    }
+	static void drawAABB(MatrixStack stack, AxisAlignedBB aabb, double expand) {
+		drawAABB(stack, aabb.grow(expand, expand, expand));
+	}
 }

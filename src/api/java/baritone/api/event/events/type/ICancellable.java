@@ -23,13 +23,13 @@ package baritone.api.event.events.type;
  */
 public interface ICancellable {
 
-    /**
-     * Cancels this event
-     */
-    void cancel();
+	/**
+	 * Cancels this event
+	 */
+	void cancel();
 
-    /**
-     * @return Whether or not this event has been cancelled
-     */
-    boolean isCancelled();
+	/**
+	 * @return Whether or not this event has been cancelled
+	 */
+	boolean isCancelled();
 }

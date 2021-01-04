@@ -25,5 +25,5 @@ import baritone.api.command.exception.CommandException;
  */
 public interface IDatatypePostFunction<T, O> {
 
-    T apply(O original) throws CommandException;
+	T apply(O original) throws CommandException;
 }

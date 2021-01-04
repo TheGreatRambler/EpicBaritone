@@ -36,14 +36,16 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 @Mixin(WorldRenderer.class)
 public class MixinWorldRenderer {
 
-    @Inject(
-            method = "updateCameraAndRender",
-            at = @At("RETURN"),
-            locals = LocalCapture.CAPTURE_FAILSOFT
-    )
-    private void onStartHand(MatrixStack matrixStackIn, float partialTicks, long finishTimeNano, boolean drawBlockOutline, ActiveRenderInfo activeRenderInfoIn, GameRenderer gameRendererIn, LightTexture lightmapIn, Matrix4f projectionIn, CallbackInfo ci) {
-        for (IBaritone ibaritone : BaritoneAPI.getProvider().getAllBaritones()) {
-            ibaritone.getGameEventHandler().onRenderPass(new RenderEvent(partialTicks, matrixStackIn, projectionIn));
-        }
-    }
+	@Inject(method = "updateCameraAndRender", at = @At("RETURN"),
+		locals = LocalCapture.CAPTURE_FAILSOFT)
+	private void
+	onStartHand(MatrixStack matrixStackIn, float partialTicks,
+		long finishTimeNano, boolean drawBlockOutline,
+		ActiveRenderInfo activeRenderInfoIn, GameRenderer gameRendererIn,
+		LightTexture lightmapIn, Matrix4f projectionIn, CallbackInfo ci) {
+		for(IBaritone ibaritone : BaritoneAPI.getProvider().getAllBaritones()) {
+			ibaritone.getGameEventHandler().onRenderPass(
+				new RenderEvent(partialTicks, matrixStackIn, projectionIn));
+		}
+	}
 }

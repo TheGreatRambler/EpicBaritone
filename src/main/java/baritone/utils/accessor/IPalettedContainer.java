@@ -21,7 +21,7 @@ import net.minecraft.block.BlockState;
 
 public interface IPalettedContainer {
 
-    BlockState getAtPalette(int index);
+	BlockState getAtPalette(int index);
 
-    int[] storageArray();
+	int[] storageArray();
 }

@@ -26,28 +26,26 @@ import net.minecraft.util.registry.Registry;
 import java.util.stream.Stream;
 
 public enum BlockById implements IDatatypeFor<Block> {
-    INSTANCE;
+	INSTANCE;
 
-    @Override
-    public Block get(IDatatypeContext ctx) throws CommandException {
-        ResourceLocation id = new ResourceLocation(ctx.getConsumer().getString());
-        Block block;
-        if ((block = Registry.BLOCK.getValue(id).orElse(null)) == null) {
-            throw new IllegalArgumentException("no block found by that id");
-        }
-        return block;
-    }
+	@Override
+	public Block get(IDatatypeContext ctx) throws CommandException {
+		ResourceLocation id
+			= new ResourceLocation(ctx.getConsumer().getString());
+		Block block;
+		if((block = Registry.BLOCK.getValue(id).orElse(null)) == null) {
+			throw new IllegalArgumentException("no block found by that id");
+		}
+		return block;
+	}
 
-    @Override
-    public Stream<String> tabComplete(IDatatypeContext ctx) throws CommandException {
-        return new TabCompleteHelper()
-                .append(
-                        Registry.BLOCK.keySet()
-                                .stream()
-                                .map(Object::toString)
-                )
-                .filterPrefixNamespaced(ctx.getConsumer().getString())
-                .sortAlphabetically()
-                .stream();
-    }
+	@Override
+	public Stream<String> tabComplete(IDatatypeContext ctx)
+		throws CommandException {
+		return new TabCompleteHelper()
+			.append(Registry.BLOCK.keySet().stream().map(Object::toString))
+			.filterPrefixNamespaced(ctx.getConsumer().getString())
+			.sortAlphabetically()
+			.stream();
+	}
 }

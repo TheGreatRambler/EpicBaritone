@@ -31,37 +31,42 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public enum RelativeGoal implements IDatatypePost<Goal, BetterBlockPos> {
-    INSTANCE;
+	INSTANCE;
 
-    @Override
-    public Goal apply(IDatatypeContext ctx, BetterBlockPos origin) throws CommandException {
-        if (origin == null) {
-            origin = BetterBlockPos.ORIGIN;
-        }
+	@Override
+	public Goal apply(IDatatypeContext ctx, BetterBlockPos origin)
+		throws CommandException {
+		if(origin == null) {
+			origin = BetterBlockPos.ORIGIN;
+		}
 
-        final IArgConsumer consumer = ctx.getConsumer();
+		final IArgConsumer consumer = ctx.getConsumer();
 
-        GoalBlock goalBlock = consumer.peekDatatypePostOrNull(RelativeGoalBlock.INSTANCE, origin);
-        if (goalBlock != null) {
-            return goalBlock;
-        }
+		GoalBlock goalBlock = consumer.peekDatatypePostOrNull(
+			RelativeGoalBlock.INSTANCE, origin);
+		if(goalBlock != null) {
+			return goalBlock;
+		}
 
-        GoalXZ goalXZ = consumer.peekDatatypePostOrNull(RelativeGoalXZ.INSTANCE, origin);
-        if (goalXZ != null) {
-            return goalXZ;
-        }
+		GoalXZ goalXZ
+			= consumer.peekDatatypePostOrNull(RelativeGoalXZ.INSTANCE, origin);
+		if(goalXZ != null) {
+			return goalXZ;
+		}
 
-        GoalYLevel goalYLevel = consumer.peekDatatypePostOrNull(RelativeGoalYLevel.INSTANCE, origin);
-        if (goalYLevel != null) {
-            return goalYLevel;
-        }
+		GoalYLevel goalYLevel = consumer.peekDatatypePostOrNull(
+			RelativeGoalYLevel.INSTANCE, origin);
+		if(goalYLevel != null) {
+			return goalYLevel;
+		}
 
-        // when the user doesn't input anything, default to the origin
-        return new GoalBlock(origin);
-    }
+		// when the user doesn't input anything, default to the origin
+		return new GoalBlock(origin);
+	}
 
-    @Override
-    public Stream<String> tabComplete(IDatatypeContext ctx) {
-        return ctx.getConsumer().tabCompleteDatatype(RelativeCoordinate.INSTANCE);
-    }
+	@Override
+	public Stream<String> tabComplete(IDatatypeContext ctx) {
+		return ctx.getConsumer().tabCompleteDatatype(
+			RelativeCoordinate.INSTANCE);
+	}
 }

@@ -26,10 +26,10 @@ import baritone.api.command.argparser.IArgParserManager;
  * @since 10/4/2019
  */
 public enum CommandSystem implements ICommandSystem {
-    INSTANCE;
+	INSTANCE;
 
-    @Override
-    public IArgParserManager getParserManager() {
-        return ArgParserManager.INSTANCE;
-    }
+	@Override
+	public IArgParserManager getParserManager() {
+		return ArgParserManager.INSTANCE;
+	}
 }

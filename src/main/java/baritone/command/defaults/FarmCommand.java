@@ -28,34 +28,32 @@ import java.util.stream.Stream;
 
 public class FarmCommand extends Command {
 
-    public FarmCommand(IBaritone baritone) {
-        super(baritone, "farm");
-    }
+	public FarmCommand(IBaritone baritone) {
+		super(baritone, "farm");
+	}
 
-    @Override
-    public void execute(String label, IArgConsumer args) throws CommandException {
-        args.requireMax(0);
-        baritone.getFarmProcess().farm();
-        logDirect("Farming");
-    }
+	@Override
+	public void execute(String label, IArgConsumer args)
+		throws CommandException {
+		args.requireMax(0);
+		baritone.getFarmProcess().farm();
+		logDirect("Farming");
+	}
 
-    @Override
-    public Stream<String> tabComplete(String label, IArgConsumer args) {
-        return Stream.empty();
-    }
+	@Override
+	public Stream<String> tabComplete(String label, IArgConsumer args) {
+		return Stream.empty();
+	}
 
-    @Override
-    public String getShortDesc() {
-        return "Farm nearby crops";
-    }
+	@Override
+	public String getShortDesc() {
+		return "Farm nearby crops";
+	}
 
-    @Override
-    public List<String> getLongDesc() {
-        return Arrays.asList(
-                "The farm command starts farming nearby plants. It harvests mature crops and plants new ones.",
-                "",
-                "Usage:",
-                "> farm"
-        );
-    }
+	@Override
+	public List<String> getLongDesc() {
+		return Arrays.asList(
+			"The farm command starts farming nearby plants. It harvests mature crops and plants new ones.",
+			"", "Usage:", "> farm");
+	}
 }

@@ -32,21 +32,21 @@ import java.util.stream.Stream;
  */
 public interface ICommandManager {
 
-    IBaritone getBaritone();
+	IBaritone getBaritone();
 
-    Registry<ICommand> getRegistry();
+	Registry<ICommand> getRegistry();
 
-    /**
-     * @param name The command name to search for.
-     * @return The command, if found.
-     */
-    ICommand getCommand(String name);
+	/**
+	 * @param name The command name to search for.
+	 * @return The command, if found.
+	 */
+	ICommand getCommand(String name);
 
-    boolean execute(String string);
+	boolean execute(String string);
 
-    boolean execute(Tuple<String, List<ICommandArgument>> expanded);
+	boolean execute(Tuple<String, List<ICommandArgument>> expanded);
 
-    Stream<String> tabComplete(Tuple<String, List<ICommandArgument>> expanded);
+	Stream<String> tabComplete(Tuple<String, List<ICommandArgument>> expanded);
 
-    Stream<String> tabComplete(String prefix);
+	Stream<String> tabComplete(String prefix);
 }

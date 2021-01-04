@@ -39,139 +39,155 @@ import java.util.regex.Pattern;
 
 public final class BlockOptionalMeta {
 
-    private final Block block;
-    private final Set<BlockState> blockstates;
-    private final ImmutableSet<Integer> stateHashes;
-    private final ImmutableSet<Integer> stackHashes;
-    private static final Pattern pattern = Pattern.compile("^(.+?)(?::(\\d+))?$");
-    private static LootTableManager manager;
-    private static LootPredicateManager predicate = new LootPredicateManager();
-    private static Map<Block, List<Item>> drops = new HashMap<>();
+	private final Block block;
+	private final Set<BlockState> blockstates;
+	private final ImmutableSet<Integer> stateHashes;
+	private final ImmutableSet<Integer> stackHashes;
+	private static final Pattern pattern
+		= Pattern.compile("^(.+?)(?::(\\d+))?$");
+	private static LootTableManager manager;
+	private static LootPredicateManager predicate = new LootPredicateManager();
+	private static Map<Block, List<Item>> drops   = new HashMap<>();
 
-    public BlockOptionalMeta(@Nonnull Block block) {
-        this.block = block;
-        this.blockstates = getStates(block);
-        this.stateHashes = getStateHashes(blockstates);
-        this.stackHashes = getStackHashes(blockstates);
-    }
+	public BlockOptionalMeta(@Nonnull Block block) {
+		this.block       = block;
+		this.blockstates = getStates(block);
+		this.stateHashes = getStateHashes(blockstates);
+		this.stackHashes = getStackHashes(blockstates);
+	}
 
-    public BlockOptionalMeta(@Nonnull String selector) {
-        Matcher matcher = pattern.matcher(selector);
+	public BlockOptionalMeta(@Nonnull String selector) {
+		Matcher matcher = pattern.matcher(selector);
 
-        if (!matcher.find()) {
-            throw new IllegalArgumentException("invalid block selector");
-        }
+		if(!matcher.find()) {
+			throw new IllegalArgumentException("invalid block selector");
+		}
 
-        MatchResult matchResult = matcher.toMatchResult();
+		MatchResult matchResult = matcher.toMatchResult();
 
-        block = BlockUtils.stringToBlockRequired(matchResult.group(1));
-        blockstates = getStates(block);
-        stateHashes = getStateHashes(blockstates);
-        stackHashes = getStackHashes(blockstates);
-    }
+		block       = BlockUtils.stringToBlockRequired(matchResult.group(1));
+		blockstates = getStates(block);
+		stateHashes = getStateHashes(blockstates);
+		stackHashes = getStackHashes(blockstates);
+	}
 
-    private static Set<BlockState> getStates(@Nonnull Block block) {
-        return new HashSet<>(block.getStateContainer().getValidStates());
-    }
+	private static Set<BlockState> getStates(@Nonnull Block block) {
+		return new HashSet<>(block.getStateContainer().getValidStates());
+	}
 
-    private static ImmutableSet<Integer> getStateHashes(Set<BlockState> blockstates) {
-        return ImmutableSet.copyOf(
-                blockstates.stream()
-                        .map(BlockState::hashCode)
-                        .toArray(Integer[]::new)
-        );
-    }
+	private static ImmutableSet<Integer> getStateHashes(
+		Set<BlockState> blockstates) {
+		return ImmutableSet.copyOf(blockstates.stream()
+									   .map(BlockState::hashCode)
+									   .toArray(Integer[] ::new));
+	}
 
-    private static ImmutableSet<Integer> getStackHashes(Set<BlockState> blockstates) {
-        //noinspection ConstantConditions
-        return ImmutableSet.copyOf(
-                blockstates.stream()
-                        .flatMap(state -> drops(state.getBlock())
-                                .stream()
-                                .map(item -> new ItemStack(item, 1))
-                        )
-                        .map(stack -> ((IItemStack) (Object) stack).getBaritoneHash())
-                        .toArray(Integer[]::new)
-        );
-    }
+	private static ImmutableSet<Integer> getStackHashes(
+		Set<BlockState> blockstates) {
+		// noinspection ConstantConditions
+		return ImmutableSet.copyOf(
+			blockstates.stream()
+				.flatMap(state
+					-> drops(state.getBlock())
+						   .stream()
+						   .map(item -> new ItemStack(item, 1)))
+				.map(stack -> ((IItemStack)(Object)stack).getBaritoneHash())
+				.toArray(Integer[] ::new));
+	}
 
-    public Block getBlock() {
-        return block;
-    }
+	public Block getBlock() {
+		return block;
+	}
 
-    public boolean matches(@Nonnull Block block) {
-        return block == this.block;
-    }
+	public boolean matches(@Nonnull Block block) {
+		return block == this.block;
+	}
 
-    public boolean matches(@Nonnull BlockState blockstate) {
-        Block block = blockstate.getBlock();
-        return block == this.block && stateHashes.contains(blockstate.hashCode());
-    }
+	public boolean matches(@Nonnull BlockState blockstate) {
+		Block block = blockstate.getBlock();
+		return block == this.block
+			&& stateHashes.contains(blockstate.hashCode());
+	}
 
-    public boolean matches(ItemStack stack) {
-        //noinspection ConstantConditions
-        int hash = ((IItemStack) (Object) stack).getBaritoneHash();
+	public boolean matches(ItemStack stack) {
+		// noinspection ConstantConditions
+		int hash = ((IItemStack)(Object)stack).getBaritoneHash();
 
-        hash -= stack.getDamage();
+		hash -= stack.getDamage();
 
-        return stackHashes.contains(hash);
-    }
+		return stackHashes.contains(hash);
+	}
 
-    @Override
-    public String toString() {
-        return String.format("BlockOptionalMeta{block=%s}", block);
-    }
+	@Override
+	public String toString() {
+		return String.format("BlockOptionalMeta{block=%s}", block);
+	}
 
-    public BlockState getAnyBlockState() {
-        if (blockstates.size() > 0) {
-            return blockstates.iterator().next();
-        }
+	public BlockState getAnyBlockState() {
+		if(blockstates.size() > 0) {
+			return blockstates.iterator().next();
+		}
 
-        return null;
-    }
+		return null;
+	}
 
-    public static LootTableManager getManager() {
-        if (manager == null) {
-            ResourcePackList<?> rpl = new ResourcePackList<>(ResourcePackInfo::new, new ServerPackFinder());
-            rpl.reloadPacksFromFinders();
-            IResourcePack thePack = rpl.getAllPacks().iterator().next().getResourcePack();
-            IReloadableResourceManager resourceManager = new SimpleReloadableResourceManager(ResourcePackType.SERVER_DATA);
-            manager = new LootTableManager(predicate);
-            resourceManager.addReloadListener(manager);
-            try {
-                resourceManager.reloadResourcesAndThen(new ThreadPerTaskExecutor(Thread::new), new ThreadPerTaskExecutor(Thread::new), Collections.singletonList(thePack), CompletableFuture.completedFuture(Unit.INSTANCE)).get();
-            } catch (Exception exception) {
-                throw new RuntimeException(exception);
-            }
-        }
-        return manager;
-    }
+	public static LootTableManager getManager() {
+		if(manager == null) {
+			ResourcePackList<?> rpl = new ResourcePackList<>(
+				ResourcePackInfo::new, new ServerPackFinder());
+			rpl.reloadPacksFromFinders();
+			IResourcePack thePack
+				= rpl.getAllPacks().iterator().next().getResourcePack();
+			IReloadableResourceManager resourceManager
+				= new SimpleReloadableResourceManager(
+					ResourcePackType.SERVER_DATA);
+			manager = new LootTableManager(predicate);
+			resourceManager.addReloadListener(manager);
+			try {
+				resourceManager
+					.reloadResourcesAndThen(
+						new ThreadPerTaskExecutor(Thread::new),
+						new ThreadPerTaskExecutor(Thread::new),
+						Collections.singletonList(thePack),
+						CompletableFuture.completedFuture(Unit.INSTANCE))
+					.get();
+			} catch(Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		}
+		return manager;
+	}
 
-    public static LootPredicateManager getPredicateManager() {
-        return predicate;
-    }
+	public static LootPredicateManager getPredicateManager() {
+		return predicate;
+	}
 
-    private static synchronized List<Item> drops(Block b) {
-        return drops.computeIfAbsent(b, block -> {
-            ResourceLocation lootTableLocation = block.getLootTable();
-            if (lootTableLocation == LootTables.EMPTY) {
-                return Collections.emptyList();
-            } else {
-                List<Item> items = new ArrayList<>();
+	private static synchronized List<Item> drops(Block b) {
+		return drops.computeIfAbsent(b, block -> {
+			ResourceLocation lootTableLocation = block.getLootTable();
+			if(lootTableLocation == LootTables.EMPTY) {
+				return Collections.emptyList();
+			} else {
+				List<Item> items = new ArrayList<>();
 
-                // the other overload for generate doesnt work in forge because forge adds code that requires a non null world
-                getManager().getLootTableFromLocation(lootTableLocation).generate(
-                    new LootContext.Builder(null)
-                        .withRandom(new Random())
-                        .withParameter(LootParameters.POSITION, BlockPos.ZERO)
-                        .withParameter(LootParameters.TOOL, ItemStack.EMPTY)
-                        .withNullableParameter(LootParameters.BLOCK_ENTITY, null)
-                        .withParameter(LootParameters.BLOCK_STATE, block.getDefaultState())
-                        .build(LootParameterSets.BLOCK),
-                    stack -> items.add(stack.getItem())
-                );
-                return items;
-            }
-        });
-    }
+				// the other overload for generate doesnt work in forge because
+				// forge adds code that requires a non null world
+				getManager()
+					.getLootTableFromLocation(lootTableLocation)
+					.generate(
+						new LootContext.Builder(null)
+							.withRandom(new Random())
+							.withParameter(
+								LootParameters.POSITION, BlockPos.ZERO)
+							.withParameter(LootParameters.TOOL, ItemStack.EMPTY)
+							.withNullableParameter(
+								LootParameters.BLOCK_ENTITY, null)
+							.withParameter(LootParameters.BLOCK_STATE,
+								block.getDefaultState())
+							.build(LootParameterSets.BLOCK),
+						stack -> items.add(stack.getItem()));
+				return items;
+			}
+		});
+	}
 }

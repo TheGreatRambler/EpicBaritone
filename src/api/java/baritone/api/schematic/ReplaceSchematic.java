@@ -22,20 +22,21 @@ import net.minecraft.block.BlockState;
 
 public class ReplaceSchematic extends MaskSchematic {
 
-    private final BlockOptionalMetaLookup filter;
-    private final Boolean[][][] cache;
+	private final BlockOptionalMetaLookup filter;
+	private final Boolean[][][] cache;
 
-    public ReplaceSchematic(ISchematic schematic, BlockOptionalMetaLookup filter) {
-        super(schematic);
-        this.filter = filter;
-        this.cache = new Boolean[widthX()][heightY()][lengthZ()];
-    }
+	public ReplaceSchematic(
+		ISchematic schematic, BlockOptionalMetaLookup filter) {
+		super(schematic);
+		this.filter = filter;
+		this.cache  = new Boolean[widthX()][heightY()][lengthZ()];
+	}
 
-    @Override
-    protected boolean partOfMask(int x, int y, int z, BlockState currentState) {
-        if (cache[x][y][z] == null) {
-            cache[x][y][z] = filter.has(currentState);
-        }
-        return cache[x][y][z];
-    }
+	@Override
+	protected boolean partOfMask(int x, int y, int z, BlockState currentState) {
+		if(cache[x][y][z] == null) {
+			cache[x][y][z] = filter.has(currentState);
+		}
+		return cache[x][y][z];
+	}
 }

@@ -23,10 +23,10 @@ package baritone.api.cache;
  */
 public interface IWorldProvider {
 
-    /**
-     * Returns the data of the currently loaded world
-     *
-     * @return The current world data
-     */
-    IWorldData getCurrentWorld();
+	/**
+	 * Returns the data of the currently loaded world
+	 *
+	 * @return The current world data
+	 */
+	IWorldData getCurrentWorld();
 }

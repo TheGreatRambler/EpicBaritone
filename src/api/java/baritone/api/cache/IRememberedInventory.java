@@ -27,13 +27,13 @@ import java.util.List;
  */
 public interface IRememberedInventory {
 
-    /**
-     * @return The contents of this inventory
-     */
-    List<ItemStack> getContents();
+	/**
+	 * @return The contents of this inventory
+	 */
+	List<ItemStack> getContents();
 
-    /**
-     * @return The number of slots in this inventory
-     */
-    int getSize();
+	/**
+	 * @return The number of slots in this inventory
+	 */
+	int getSize();
 }

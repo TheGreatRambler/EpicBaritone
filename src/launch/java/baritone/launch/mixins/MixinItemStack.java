@@ -31,38 +31,28 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ItemStack.class)
 public abstract class MixinItemStack implements IItemStack {
 
-    @Shadow
-    @Final
-    private Item item;
+	@Shadow @Final private Item item;
 
-    @Unique
-    private int baritoneHash;
+	@Unique private int baritoneHash;
 
-    @Shadow
-    protected abstract int getDamage();
+	@Shadow protected abstract int getDamage();
 
-    private void recalculateHash() {
-        baritoneHash = item == null ? -1 : item.hashCode() + getDamage();
-    }
+	private void recalculateHash() {
+		baritoneHash = item == null ? -1 : item.hashCode() + getDamage();
+	}
 
-    @Inject(
-            method = "<init>*",
-            at = @At("RETURN")
-    )
-    private void onInit(CallbackInfo ci) {
-        recalculateHash();
-    }
+	@Inject(method = "<init>*", at = @At("RETURN"))
+	private void onInit(CallbackInfo ci) {
+		recalculateHash();
+	}
 
-    @Inject(
-            method = "setDamage",
-            at = @At("TAIL")
-    )
-    private void onItemDamageSet(CallbackInfo ci) {
-        recalculateHash();
-    }
+	@Inject(method = "setDamage", at = @At("TAIL"))
+	private void onItemDamageSet(CallbackInfo ci) {
+		recalculateHash();
+	}
 
-    @Override
-    public int getBaritoneHash() {
-        return baritoneHash;
-    }
+	@Override
+	public int getBaritoneHash() {
+		return baritoneHash;
+	}
 }

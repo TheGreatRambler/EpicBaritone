@@ -27,18 +27,18 @@ import java.util.Map;
  */
 public interface IContainerMemory {
 
-    /**
-     * Gets a remembered inventory by its block position.
-     *
-     * @param pos The position of the container block
-     * @return The remembered inventory
-     */
-    IRememberedInventory getInventoryByPos(BlockPos pos);
+	/**
+	 * Gets a remembered inventory by its block position.
+	 *
+	 * @param pos The position of the container block
+	 * @return The remembered inventory
+	 */
+	IRememberedInventory getInventoryByPos(BlockPos pos);
 
-    /**
-     * Gets the map of all block positions to their remembered inventories.
-     *
-     * @return Map of block positions to their respective remembered inventories
-     */
-    Map<BlockPos, IRememberedInventory> getRememberedInventories();
+	/**
+	 * Gets the map of all block positions to their remembered inventories.
+	 *
+	 * @return Map of block positions to their respective remembered inventories
+	 */
+	Map<BlockPos, IRememberedInventory> getRememberedInventories();
 }
