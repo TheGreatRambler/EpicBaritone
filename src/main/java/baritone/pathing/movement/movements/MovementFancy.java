@@ -27,6 +27,7 @@ import baritone.pathing.movement.MovementHelper;
 import baritone.pathing.movement.MovementState;
 import baritone.utils.BlockStateInterface;
 import baritone.utils.pathing.MutableMoveResult;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Objects;
@@ -126,7 +127,7 @@ public class MovementFancy extends Movement {
 		for(double angle = 0; angle < maxAngle; angle += angleIncrease) {
 			for(double initialSpeed = 0; initialSpeed < maxSpeed;
 				initialSpeed += speedIncrease) {
-				for(boolean isFirstTick : Boolean[] { true, false }) {
+				for(boolean isFirstTick : new Boolean[] { true, false }) {
 					AngleAndSpeed angleAndSpeed
 						= new AngleAndSpeed(angle, initialSpeed);
 					JumpCalculation[] tickCalculations
@@ -185,8 +186,8 @@ public class MovementFancy extends Movement {
 						// playerFeetOffset=2 (player can be within 3 blocks
 						// vertically)
 
-						int pointIndex                   = 0;
-						static double[][] pointsToRotate = { { -0.3, 0.3 },
+						int pointIndex                  = 0;
+						final double[][] pointsToRotate = { { -0.3, 0.3 },
 							{ -0.1, 0.3 }, { 0.1, 0.3 }, { 0.3, 0.3 },
 							{ 0.3, 0.1 }, { 0.3, -0.1 }, { 0.3, -0.3 },
 							{ 0.1, -0.3 }, { -0.1, -0.3 }, { -0.3, -0.3 },
@@ -212,10 +213,11 @@ public class MovementFancy extends Movement {
 						tickCalculations[calc.tick] = calc;
 					}
 
-					isFirstTick
-						? calcsFirstTick.put(angleAndSpeed, tickCalculations)
-						: calcsNotFirstTick.put(
-							angleAndSpeed, tickCalculations);
+					if(isFirstTick) {
+						calcsFirstTick.put(angleAndSpeed, tickCalculations);
+					} else {
+						calcsNotFirstTick.put(angleAndSpeed, tickCalculations);
+					}
 				}
 			}
 		}
@@ -334,10 +336,9 @@ public class MovementFancy extends Movement {
 	public ArrayList<Jump> getCosts(CalculationContext context, double x,
 		double y, double z, ArrayList<JumpCalculation[]> jumpCalculations) {
 		ArrayList<Jump> costsArray = new ArrayList<>();
-		// Check for headhitter jump, as it is only 2 frames
 		double lastY               = 0;
 		int currentTick            = 0;
-		static double playerHeight = 1.8;
+		final double playerHeight  = 1.8;
 		for(JumpCalculation tickCalculation : jumpCalculations) {
 			// 0th tick is unimportant
 			if(currentTick == 0) {
@@ -350,6 +351,15 @@ public class MovementFancy extends Movement {
 				// Descending now
 				isDescending = true;
 			}
+
+			// private class Jump {
+			//	public double angle;
+			//	public BetterBlockPos endingPosition;
+			//	public double fallHeight;
+			//	public double realX;
+			//	public double realZ;
+			//	public double cost;
+			//}
 
 			double playerX = x + tickCalculation.x;
 			double playerY = y + tickCalculation.y;
