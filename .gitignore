@@ -25,3 +25,5 @@ classes/
 !/.idea/copyright/profiles_settings.xml
 
 .vscode
+.settings
+bin
