@@ -51,5 +51,9 @@ public interface IMovement {
 
 	BetterBlockPos getDest();
 
+	double getDestX();
+
+	double getDestZ();
+
 	BlockPos getDirection();
 }

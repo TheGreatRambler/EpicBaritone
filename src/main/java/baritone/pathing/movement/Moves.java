@@ -377,18 +377,20 @@ public enum Moves {
 	public abstract Movement apply0(
 		CalculationContext context, BetterBlockPos src);
 
-	public void apply(CalculationContext context, int x, int y, int z,
-		MutableMoveResult result) {
+	public void apply(Movement previousMovement, CalculationContext context,
+		int x, int y, int z, MutableMoveResult result) {
 		if(dynamicXZ || dynamicY) {
 			throw new UnsupportedOperationException();
 		}
 		result.x    = x + xOffset;
 		result.y    = y + yOffset;
 		result.z    = z + zOffset;
-		result.cost = cost(context, x, y, z);
+		result.cost = cost(previousMovement, context, x, y, z);
 	}
 
-	public double cost(CalculationContext context, int x, int y, int z) {
+	// Previous movement needs to be passed in somehow
+	public double cost(Movement previousMovement, CalculationContext context,
+		int x, int y, int z) {
 		throw new UnsupportedOperationException();
 	}
 }

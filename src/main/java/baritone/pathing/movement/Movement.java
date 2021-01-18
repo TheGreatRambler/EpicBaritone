@@ -126,7 +126,8 @@ public abstract class Movement implements IMovement, MovementHelper {
 	protected boolean playerInValidPosition() {
 		return getValidPositions().contains(ctx.playerFeet())
 			|| getValidPositions().contains(
-				((PathingBehavior)baritone.getPathingBehavior()).pathStart());
+				   ((PathingBehavior)baritone.getPathingBehavior())
+					   .pathStart());
 	}
 
 	/**
@@ -196,7 +197,7 @@ public abstract class Movement implements IMovement, MovementHelper {
 						rotTowardsBlock, true));
 					if(ctx.isLookingAt(blockPos)
 						|| ctx.playerRotations().isReallyCloseTo(
-							rotTowardsBlock)) {
+							   rotTowardsBlock)) {
 						state.setInput(Input.CLICK_LEFT, true);
 					}
 					return false;
@@ -244,6 +245,16 @@ public abstract class Movement implements IMovement, MovementHelper {
 	@Override
 	public BetterBlockPos getDest() {
 		return dest;
+	}
+
+	@Override
+	public double getDestX() {
+		return dest.x + 0.5;
+	}
+
+	@Override
+	public double getDestZ() {
+		return dest.z + 0.5;
 	}
 
 	@Override
@@ -314,8 +325,8 @@ public abstract class Movement implements IMovement, MovementHelper {
 		}
 		List<BlockPos> result = new ArrayList<>();
 		if(positionToPlace != null
-			&& !MovementHelper.canWalkOn(
-				bsi, positionToPlace.x, positionToPlace.y, positionToPlace.z)) {
+			&& !MovementHelper.canWalkOn(bsi, positionToPlace.x,
+				   positionToPlace.y, positionToPlace.z)) {
 			result.add(positionToPlace);
 		}
 		toPlaceCached = result;
