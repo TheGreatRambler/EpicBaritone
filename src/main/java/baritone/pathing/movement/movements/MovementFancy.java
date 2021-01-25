@@ -35,6 +35,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
+import javax.annotation.concurrent.Immutable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -44,23 +45,23 @@ import net.minecraft.fluid.WaterFluid;
 import net.minecraft.util.Direction;
 
 public class MovementFancy extends Movement {
+	private Jump thisJumpcalculation;
 
 	public MovementFancy(
 		IBaritone baritone, BetterBlockPos start, BetterBlockPos end) {
 		super(
 			baritone, start, end, new BetterBlockPos[] { start.up(2) }, start);
-		validPositions = new HashSet<>();
 	}
 
 	@Override
 	public double calculateCost(CalculationContext context) {
-		return cost(context, src.x, src.y, src.z);
+		return thisJumpcalculation.cost;
 	}
 
 	@Override
 	protected Set<BetterBlockPos> calculateValidPositions() {
 		// Return valid positions where feet may be
-		return validPositions;
+		return thisJumpcalculation.validFeetLocations;
 	}
 
 	public static double cost(CalculationContext context, int x, int y, int z) {
@@ -68,7 +69,6 @@ public class MovementFancy extends Movement {
 		return 0.0;
 	}
 
-	private HashSet<BetterBlockPos> validPositions;
 	// The exact equation used to calculate jumps in minecraft 1.9+
 	// https://www.mcpk.wiki/wiki/Nonrecursive_Movement_Formulas
 	// Also some tick counts here:
@@ -142,6 +142,7 @@ public class MovementFancy extends Movement {
 		public double realZ;
 		public double cost;
 		public double endingSpeed;
+		public Set<BetterBlockPos> validFeetLocations;
 	}
 
 	private static void getJumpCalculations() {
@@ -337,8 +338,8 @@ public class MovementFancy extends Movement {
 		getJumpCalculations();
 	}
 
-	public ArrayList<JumpCalculation[]> getJumpCalculations(double x, double y,
-		double z, double angle, double speed, boolean firstTick) {
+	public static ArrayList<JumpCalculation[]> getJumpCalculations(double x,
+		double y, double z, double angle, double speed, boolean firstTick) {
 		// Using the current location, angle and speed of the player, find the
 		// possible jumps (and every tick of those possible jumps)
 		// Every returned calculation is an approximation
@@ -368,9 +369,10 @@ public class MovementFancy extends Movement {
 		double y, double z, ArrayList<JumpCalculation[]> calcs) {
 		ArrayList<Jump> costsArray = new ArrayList<>();
 		for(JumpCalculation[] jumpCalculations : calcs) {
-			double lastY              = 0;
-			int currentTick           = 0;
-			final double playerHeight = 1.8;
+			double lastY                                      = 0;
+			int currentTick                                   = 0;
+			final double playerHeight                         = 1.8;
+			Set<BetterBlockPos> validFeetLocationsForThisJump = new HashSet<>();
 			for(JumpCalculation tickCalculation : jumpCalculations) {
 				// 0th tick is unimportant
 				if(currentTick == 0) {
@@ -397,6 +399,9 @@ public class MovementFancy extends Movement {
 				double playerY    = y + tickCalculation.y;
 				double playerZ    = z + tickCalculation.z;
 				double fallHeight = -tickCalculation.y;
+
+				validFeetLocationsForThisJump.add(
+					new BetterBlockPos(playerX, playerY, playerZ));
 
 				if(isDescending) {
 					// Check all non ground tiles, as they have to be empty for
@@ -438,6 +443,8 @@ public class MovementFancy extends Movement {
 								jump.realX       = playerX;
 								jump.realZ       = playerZ;
 								jump.endingSpeed = tickCalculation.speedAfter;
+								jump.validFeetLocations = new HashSet<>(
+									validFeetLocationsForThisJump);
 								costsArray.add(jump);
 
 								break;
@@ -503,6 +510,8 @@ public class MovementFancy extends Movement {
 									jump.realZ      = playerZ;
 									jump.endingSpeed
 										= tickCalculation.speedAfter;
+									jump.validFeetLocations = new HashSet<>(
+										validFeetLocationsForThisJump);
 									costsArray.add(jump);
 								}
 							}
@@ -584,6 +593,15 @@ public class MovementFancy extends Movement {
 									jump.realZ      = nextFrameZ;
 									jump.endingSpeed
 										= jumpCalculations[2].speedAfter;
+									jump.validFeetLocations = ImmutableSet.of(
+										new BetterBlockPos(
+											jumpCalculations[1].x,
+											jumpCalculations[1].y,
+											jumpCalculations[1].z),
+										new BetterBlockPos(
+											jumpCalculations[2].x,
+											jumpCalculations[2].y,
+											jumpCalculations[2].z));
 									costsArray.add(jump);
 
 									break;
@@ -655,6 +673,16 @@ public class MovementFancy extends Movement {
 										jump.realZ      = nextFrameZ;
 										jump.endingSpeed
 											= jumpCalculations[2].speedAfter;
+										jump.validFeetLocations
+											= ImmutableSet.of(
+												new BetterBlockPos(
+													jumpCalculations[1].x,
+													jumpCalculations[1].y,
+													jumpCalculations[1].z),
+												new BetterBlockPos(
+													jumpCalculations[2].x,
+													jumpCalculations[2].y,
+													jumpCalculations[2].z));
 										costsArray.add(jump);
 
 										break;
