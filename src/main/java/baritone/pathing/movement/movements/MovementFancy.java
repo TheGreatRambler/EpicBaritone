@@ -47,10 +47,11 @@ import net.minecraft.util.Direction;
 public class MovementFancy extends Movement {
 	private Jump thisJumpcalculation;
 
-	public MovementFancy(
-		IBaritone baritone, BetterBlockPos start, BetterBlockPos end) {
-		super(
-			baritone, start, end, new BetterBlockPos[] { start.up(2) }, start);
+	public MovementFancy(IBaritone baritone, Jump jump) {
+		super(baritone,
+			new BetterBlockPos(jump.startX, jump.startY, jump.startZ),
+			jump.endingPosition, new BetterBlockPos[0], jump.blockToPlace);
+		thisJumpcalculation = jump;
 	}
 
 	@Override
@@ -69,13 +70,7 @@ public class MovementFancy extends Movement {
 		return 0.0;
 	}
 
-	// The exact equation used to calculate jumps in minecraft 1.9+
-	// https://www.mcpk.wiki/wiki/Nonrecursive_Movement_Formulas
-	// Also some tick counts here:
-	// https://www.reddit.com/r/Minecraft/comments/hlmjqt/doing_a_six_block_jump_is_impossible_as_per_116/
-	// Source code might be better
-	// https://www.mcpk.wiki/wiki/SourceCode:EntityLivingBase
-	// https://www.mcpk.wiki/wiki/Vertical_Movement_Formulas
+	// Everything below here is static
 
 	private static double angleSubdivisions = 60.0;
 	private static double speedSubdivisions = 80.0;
@@ -134,7 +129,10 @@ public class MovementFancy extends Movement {
 		}
 	}
 
-	private class Jump {
+	private static class Jump {
+		public double startX;
+		public double startY;
+		public double startZ;
 		public double angle;
 		public BetterBlockPos endingPosition;
 		public double fallHeight;
@@ -143,6 +141,8 @@ public class MovementFancy extends Movement {
 		public double cost;
 		public double endingSpeed;
 		public Set<BetterBlockPos> validFeetLocations;
+		// Used for headhitters
+		public BetterBlockPos blockToPlace;
 	}
 
 	private static void getJumpCalculations() {
@@ -153,6 +153,13 @@ public class MovementFancy extends Movement {
 		HashMap<AngleAndSpeed, JumpCalculation[]> calcsNotFirstTick
 			= new HashMap<>();
 		// https://www.mcpk.wiki/wiki/Tiers
+		// The exact equation used to calculate jumps in minecraft 1.9+
+		// https://www.mcpk.wiki/wiki/Nonrecursive_Movement_Formulas
+		// Also some tick counts here:
+		// https://www.reddit.com/r/Minecraft/comments/hlmjqt/doing_a_six_block_jump_is_impossible_as_per_116/
+		// Source code might be better
+		// https://www.mcpk.wiki/wiki/SourceCode:EntityLivingBase
+		// https://www.mcpk.wiki/wiki/Vertical_Movement_Formulas
 
 		// 158400 total subdivisions, a lot of calculations
 		for(double angle = 0; angle < maxAngle; angle += angleIncrease) {
@@ -309,7 +316,7 @@ public class MovementFancy extends Movement {
 			return 217 * (1 - Math.pow(0.98, t)) - 3.92 * t;
 	}
 
-	public static ArrayList<BetterBlockPos> getPlayerBlockPosition(
+	private static ArrayList<BetterBlockPos> getPlayerBlockPosition(
 		JumpCalculation calc, double playerX, double playerY, double playerZ,
 		double playerFeetOffset) {
 
@@ -365,9 +372,10 @@ public class MovementFancy extends Movement {
 		return calcs;
 	}
 
-	public ArrayList<Jump> getCosts(CalculationContext context, double x,
-		double y, double z, ArrayList<JumpCalculation[]> calcs) {
-		ArrayList<Jump> costsArray = new ArrayList<>();
+	public static ArrayList<MovementFancy> getCosts(IBaritone baritone,
+		CalculationContext context, double x, double y, double z,
+		ArrayList<JumpCalculation[]> calcs) {
+		ArrayList<MovementFancy> costsArray = new ArrayList<>();
 		for(JumpCalculation[] jumpCalculations : calcs) {
 			double lastY                                      = 0;
 			int currentTick                                   = 0;
@@ -445,53 +453,65 @@ public class MovementFancy extends Movement {
 								jump.endingSpeed = tickCalculation.speedAfter;
 								jump.validFeetLocations = new HashSet<>(
 									validFeetLocationsForThisJump);
-								costsArray.add(jump);
+								jump.blockToPlace = null;
+								jump.startX       = x;
+								jump.startY       = y;
+								jump.startZ       = z;
+								costsArray.add(
+									new MovementFancy(baritone, jump));
 
 								break;
 							} else {
-								boolean canPlaceABlock = groundBlocks.anyMatch(pos
-									-> {
-									for(int i = 0; i < 5; i++) {
-										int againstX
-											= pos.x
-											  + Movement
-													.HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP
-														[i]
-													.getXOffset();
-										int againstY
-											= pos.y
-											  + Movement
-													.HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP
-														[i]
-													.getYOffset();
-										int againstZ
-											= pos.z
-											  + Movement
-													.HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP
-														[i]
-													.getZOffset();
-										// if(againstX == x + xDiff * 3
-										// && againstZ
-										// == z + zDiff * 3) { // we
-										// can't
-										// // turn
-										// // around
-										// // that
-										// fast return false;
-										// }
-										if(MovementHelper.canPlaceAgainst(
-											   context.bsi, againstX, againstY,
-											   againstZ)) {
-											return true;
-										}
-									}
+								BetterBlockPos placeableBlock
+									= groundBlocks
+										  .filter(pos -> {
+											  for(int i = 0; i < 5; i++) {
+												  int againstX
+													  = pos.x
+														+ Movement
+															  .HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP
+																  [i]
+															  .getXOffset();
+												  int againstY
+													  = pos.y
+														+ Movement
+															  .HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP
+																  [i]
+															  .getYOffset();
+												  int againstZ
+													  = pos.z
+														+ Movement
+															  .HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP
+																  [i]
+															  .getZOffset();
+												  // if(againstX == x + xDiff *
+												  // 3
+												  // && againstZ
+												  // == z + zDiff * 3) { // we
+												  // can't
+												  // // turn
+												  // // around
+												  // // that
+												  // fast return false;
+												  // }
+												  if(MovementHelper
+														  .canPlaceAgainst(
+															  context.bsi,
+															  againstX,
+															  againstY,
+															  againstZ)) {
+													  return true;
+												  }
+											  }
 
-									return false;
-								});
+											  return false;
+										  })
+										  .findFirst()
+										  .orElse(null);
 
 								// Check if any block can be placed to recover
 								// the player
-								if(canPlaceABlock) {
+								if(placeableBlock != null) {
 									// Block can be placed. Won't break, as the
 									// player can choose not to place blocks and
 									// continue falling instead
@@ -512,7 +532,12 @@ public class MovementFancy extends Movement {
 										= tickCalculation.speedAfter;
 									jump.validFeetLocations = new HashSet<>(
 										validFeetLocationsForThisJump);
-									costsArray.add(jump);
+									jump.blockToPlace = placeableBlock;
+									jump.startX       = x;
+									jump.startY       = y;
+									jump.startZ       = z;
+									costsArray.add(
+										new MovementFancy(baritone, jump));
 								}
 							}
 						} else {
@@ -602,58 +627,71 @@ public class MovementFancy extends Movement {
 											jumpCalculations[2].x,
 											jumpCalculations[2].y,
 											jumpCalculations[2].z));
-									costsArray.add(jump);
+									jump.blockToPlace = null;
+									jump.startX       = x;
+									jump.startY       = y;
+									jump.startZ       = z;
+									costsArray.add(
+										new MovementFancy(baritone, jump));
 
 									break;
 								} else {
-									boolean canPlaceABlock = groundBlocks.anyMatch(pos
-										-> {
-										for(int i = 0; i < 5; i++) {
-											int againstX
-												= pos.x
-												  + Movement
-														.HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP
-															[i]
-														.getXOffset();
-											int againstY
-												= pos.y
-												  + Movement
-														.HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP
-															[i]
-														.getYOffset();
-											int againstZ
-												= pos.z
-												  + Movement
-														.HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP
-															[i]
-														.getZOffset();
-											// if(againstX == x + xDiff * 3
-											// && againstZ
-											// == z + zDiff * 3) { // we
-											// //
-											// can't
-											// //
-											// turn
-											// //
-											// around
-											// //
-											// that
-											// //
-											// fast return false;
-											// }
-											if(MovementHelper.canPlaceAgainst(
-												   context.bsi, againstX,
-												   againstY, againstZ)) {
-												return true;
-											}
-										}
+									BetterBlockPos placeableBlock
+										= groundBlocks
+											  .filter(pos -> {
+												  for(int i = 0; i < 5; i++) {
+													  int againstX
+														  = pos.x
+															+ Movement
+																  .HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP
+																	  [i]
+																  .getXOffset();
+													  int againstY
+														  = pos.y
+															+ Movement
+																  .HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP
+																	  [i]
+																  .getYOffset();
+													  int againstZ
+														  = pos.z
+															+ Movement
+																  .HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP
+																	  [i]
+																  .getZOffset();
+													  // if(againstX == x +
+													  // xDiff * 3
+													  // && againstZ
+													  // == z + zDiff * 3) { //
+													  // we
+													  // //
+													  // can't
+													  // //
+													  // turn
+													  // //
+													  // around
+													  // //
+													  // that
+													  // //
+													  // fast return false;
+													  // }
+													  if(MovementHelper
+															  .canPlaceAgainst(
+																  context.bsi,
+																  againstX,
+																  againstY,
+																  againstZ)) {
+														  return true;
+													  }
+												  }
 
-										return false;
-									});
+												  return false;
+											  })
+											  .findFirst()
+											  .orElse(null);
 
 									// Check if any block can be placed to
 									// recover the player
-									if(canPlaceABlock) {
+									if(placeableBlock != null) {
 										// Block can be placed
 										// Technically can keep calculating from
 										// here, but I don't want to bother
@@ -683,7 +721,12 @@ public class MovementFancy extends Movement {
 													jumpCalculations[2].x,
 													jumpCalculations[2].y,
 													jumpCalculations[2].z));
-										costsArray.add(jump);
+										jump.blockToPlace = placeableBlock;
+										jump.startX       = x;
+										jump.startY       = y;
+										jump.startZ       = z;
+										costsArray.add(
+											new MovementFancy(baritone, jump));
 
 										break;
 									}
