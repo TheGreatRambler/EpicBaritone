@@ -41,10 +41,12 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.StairsBlock;
 import net.minecraft.fluid.Fluids;
+import baritone.pathing.movement.Moves;
 import net.minecraft.fluid.WaterFluid;
 import net.minecraft.util.Direction;
+import net.minecraft.util.math.BlockPos;
 
-public class MovementFancy extends Movement {
+public class MovementFancy extends Movement  {
 	private Jump thisJumpcalculation;
 
 	public MovementFancy(IBaritone baritone, Jump jump) {
@@ -65,9 +67,60 @@ public class MovementFancy extends Movement {
 		return thisJumpcalculation.validFeetLocations;
 	}
 
-	public static double cost(CalculationContext context, int x, int y, int z) {
-		BlockState fromState = context.get(x, y, z);
-		return 0.0;
+	public Jump getImplementedJump() {
+		return thisJumpcalculation;
+	}
+
+	public static ArrayList<MovementFancy> getMoves(IBaritone baritone,
+		Movement previousMovement, CalculationContext context) {
+		double x;
+		double y;
+		double z;
+		double angle;
+		double speed;
+		boolean firstTick;
+
+		if(previousMovement instanceof MovementFancy) {
+			x = ((MovementFancy)previousMovement).getImplementedJump().realX;
+			y = ((MovementFancy)previousMovement).getImplementedJump().realY;
+			z = ((MovementFancy)previousMovement).getImplementedJump().realZ;
+			angle
+				= ((MovementFancy)previousMovement).getImplementedJump().angle;
+			speed = ((MovementFancy)previousMovement)
+						.getImplementedJump()
+						.endingSpeed;
+			firstTick = true;
+		} else if(previousMovement == null) {
+			BetterBlockPos playerFeet
+				= baritone.getPlayerContext().playerFeet();
+			x = ((double)playerFeet.x) + 0.5;
+			y = ((double)playerFeet.y) + 0.5;
+			z = ((double)playerFeet.z) + 0.5;
+			// The player isn't moving, these values don't matter
+			angle     = 0.0;
+			speed     = 0.0;
+			firstTick = false;
+		} else {
+			BetterBlockPos dest = previousMovement.getDest();
+			// Centered on block
+			x = ((double)dest.x) + 0.5;
+			y = ((double)dest.y) + 0.5;
+			z = ((double)dest.z) + 0.5;
+
+			// Calculate angle from destination
+			BlockPos directionPos = previousMovement.getDirection();
+			angle = Math.atan2(directionPos.getZ(), directionPos.getX());
+
+			speed     = context.canSprint ? 5.612 : 4.317;
+			firstTick = false;
+		}
+
+		ArrayList<JumpCalculation[]> jumpCalculations
+			= getJumpCalculations(angle, speed, firstTick);
+		ArrayList<MovementFancy> validMoves
+			= getJumpCosts(baritone, context, x, y, z, jumpCalculations);
+
+		return validMoves;
 	}
 
 	// Everything below here is static
@@ -137,6 +190,7 @@ public class MovementFancy extends Movement {
 		public BetterBlockPos endingPosition;
 		public double fallHeight;
 		public double realX;
+		public double realY;
 		public double realZ;
 		public double cost;
 		public double endingSpeed;
@@ -145,9 +199,87 @@ public class MovementFancy extends Movement {
 		public BetterBlockPos blockToPlace;
 	}
 
+	// Movement multiplier
+	private static double M = 1.274;
+	// Jump bonus
+	private static double J = 0.3274;
+
+	// https://www.mcpk.wiki/wiki/Nonrecursive_Movement_Formulas
+	private static double jumpDistance(double speed, int t, boolean firstTick) {
+		if(t < 2) {
+			return 0;
+		} else {
+			if(firstTick) {
+				return 1.91 * speed + J + ((0.02 * M) / 0.09) * (t - 2)
+					+ ((0.6 * Math.pow(0.91, 2)) / 0.09)
+						  * (1 - Math.pow(0.91, t - 2))
+						  * (speed + (J / 0.91)
+							  - ((0.02 * M) / (0.6 * 0.91 * 0.09)));
+			} else {
+				return 1.546 * speed + J + ((0.02 * M) / 0.09) * (t - 2)
+					+ ((0.6 * Math.pow(0.91, 2)) / 0.09)
+						  * (1 - Math.pow(0.91, t - 2))
+						  * (speed * 0.6 + (J / 0.91)
+							  - ((0.02 * M) / (0.6 * 0.91 * 0.09)));
+			}
+		}
+	}
+
+	private static double jumpSpeed(double speed, int t, boolean firstTick) {
+		if(t < 2) {
+			return speed;
+		} else {
+			if(firstTick) {
+				return ((0.02 * M) / (0.09))
+					+ 0.6 * Math.pow(0.91, t)
+						  * (speed + (J / 0.91)
+							  - ((0.02 * M) / 0.6 * 0.91 * 0.09));
+			} else {
+				return ((0.02 * M) / (0.09))
+					+ 0.6 * Math.pow(0.91, t)
+						  * (speed * 0.6 + (J / 0.91)
+							  - ((0.02 * M) / 0.6 * 0.91 * 0.09));
+			}
+		}
+	}
+
+	private static double jumpHeight(int t) {
+		if(t == 0)
+			return 0;
+		else
+			return 217 * (1 - Math.pow(0.98, t)) - 3.92 * t;
+	}
+
+	private static ArrayList<BetterBlockPos> getPlayerBlockPosition(
+		JumpCalculation calc, double playerX, double playerY, double playerZ,
+		double playerFeetOffset) {
+
+		ArrayList<BetterBlockPos> positions = new ArrayList<>();
+		for(int i = 0; i < calc.hitboxX.length; i++) {
+			BetterBlockPos blockAtThisPoint = new BetterBlockPos(
+				calc.hitboxX[i] + playerX, playerY + calc.y + playerFeetOffset,
+				calc.hitboxZ[i] + playerZ);
+
+			if(!positions.contains(blockAtThisPoint)) {
+				positions.add(blockAtThisPoint);
+			}
+		}
+
+		return positions;
+	}
+
+	private static HashMap<AngleAndSpeed, JumpCalculation[]>
+		jumpCalculationsSpecificFirstTick;
+	private static HashMap<AngleAndSpeed, JumpCalculation[]>
+		jumpCalculationsSpecificNotFirstTick;
+
+	static {
+		// Obtain these lookup tables statically
+		getJumpCalculations();
+	}
+
 	private static void getJumpCalculations() {
 		// Obtain the lookup tables statically
-		ArrayList<JumpCalculation> calculations = new ArrayList<>();
 		HashMap<AngleAndSpeed, JumpCalculation[]> calcsFirstTick
 			= new HashMap<>();
 		HashMap<AngleAndSpeed, JumpCalculation[]> calcsNotFirstTick
@@ -260,93 +392,12 @@ public class MovementFancy extends Movement {
 			}
 		}
 
-		allJumpCalculations                  = calculations;
 		jumpCalculationsSpecificFirstTick    = calcsFirstTick;
 		jumpCalculationsSpecificNotFirstTick = calcsNotFirstTick;
 	}
 
-	// Movement multiplier
-	private static double M = 1.274;
-	// Jump bonus
-	private static double J = 0.3274;
-
-	// https://www.mcpk.wiki/wiki/Nonrecursive_Movement_Formulas
-	private static double jumpDistance(double speed, int t, boolean firstTick) {
-		if(t < 2) {
-			return 0;
-		} else {
-			if(firstTick) {
-				return 1.91 * speed + J + ((0.02 * M) / 0.09) * (t - 2)
-					+ ((0.6 * Math.pow(0.91, 2)) / 0.09)
-						  * (1 - Math.pow(0.91, t - 2))
-						  * (speed + (J / 0.91)
-							  - ((0.02 * M) / (0.6 * 0.91 * 0.09)));
-			} else {
-				return 1.546 * speed + J + ((0.02 * M) / 0.09) * (t - 2)
-					+ ((0.6 * Math.pow(0.91, 2)) / 0.09)
-						  * (1 - Math.pow(0.91, t - 2))
-						  * (speed * 0.6 + (J / 0.91)
-							  - ((0.02 * M) / (0.6 * 0.91 * 0.09)));
-			}
-		}
-	}
-
-	private static double jumpSpeed(double speed, int t, boolean firstTick) {
-		if(t < 2) {
-			return speed;
-		} else {
-			if(firstTick) {
-				return ((0.02 * M) / (0.09))
-					+ 0.6 * Math.pow(0.91, t)
-						  * (speed + (J / 0.91)
-							  - ((0.02 * M) / 0.6 * 0.91 * 0.09));
-			} else {
-				return ((0.02 * M) / (0.09))
-					+ 0.6 * Math.pow(0.91, t)
-						  * (speed * 0.6 + (J / 0.91)
-							  - ((0.02 * M) / 0.6 * 0.91 * 0.09));
-			}
-		}
-	}
-
-	private static double jumpHeight(int t) {
-		if(t == 0)
-			return 0;
-		else
-			return 217 * (1 - Math.pow(0.98, t)) - 3.92 * t;
-	}
-
-	private static ArrayList<BetterBlockPos> getPlayerBlockPosition(
-		JumpCalculation calc, double playerX, double playerY, double playerZ,
-		double playerFeetOffset) {
-
-		ArrayList<BetterBlockPos> positions = new ArrayList<>();
-		for(int i = 0; i < calc.hitboxX.length; i++) {
-			BetterBlockPos blockAtThisPoint = new BetterBlockPos(
-				calc.hitboxX[i] + playerX, playerY + calc.y + playerFeetOffset,
-				calc.hitboxZ[i] + playerZ);
-
-			if(!positions.contains(blockAtThisPoint)) {
-				positions.add(blockAtThisPoint);
-			}
-		}
-
-		return positions;
-	}
-
-	private static ArrayList<JumpCalculation> allJumpCalculations;
-	private static HashMap<AngleAndSpeed, JumpCalculation[]>
-		jumpCalculationsSpecificFirstTick;
-	private static HashMap<AngleAndSpeed, JumpCalculation[]>
-		jumpCalculationsSpecificNotFirstTick;
-
-	static {
-		// Obtain these lookup tables statically
-		getJumpCalculations();
-	}
-
-	public static ArrayList<JumpCalculation[]> getJumpCalculations(double x,
-		double y, double z, double angle, double speed, boolean firstTick) {
+	public static ArrayList<JumpCalculation[]> getJumpCalculations(
+		double angle, double speed, boolean firstTick) {
 		// Using the current location, angle and speed of the player, find the
 		// possible jumps (and every tick of those possible jumps)
 		// Every returned calculation is an approximation
@@ -372,7 +423,7 @@ public class MovementFancy extends Movement {
 		return calcs;
 	}
 
-	public static ArrayList<MovementFancy> getCosts(IBaritone baritone,
+	private static ArrayList<MovementFancy> getJumpCosts(IBaritone baritone,
 		CalculationContext context, double x, double y, double z,
 		ArrayList<JumpCalculation[]> calcs) {
 		ArrayList<MovementFancy> costsArray = new ArrayList<>();
@@ -449,6 +500,7 @@ public class MovementFancy extends Movement {
 									playerX, playerY, playerZ);
 								jump.fallHeight  = fallHeight;
 								jump.realX       = playerX;
+								jump.realY       = playerY;
 								jump.realZ       = playerZ;
 								jump.endingSpeed = tickCalculation.speedAfter;
 								jump.validFeetLocations = new HashSet<>(
@@ -527,6 +579,7 @@ public class MovementFancy extends Movement {
 										playerX, playerY, playerZ);
 									jump.fallHeight = fallHeight;
 									jump.realX      = playerX;
+									jump.realY      = playerY;
 									jump.realZ      = playerZ;
 									jump.endingSpeed
 										= tickCalculation.speedAfter;
@@ -615,6 +668,7 @@ public class MovementFancy extends Movement {
 										nextFrameX, playerY, nextFrameZ);
 									jump.fallHeight = 0;
 									jump.realX      = nextFrameX;
+									jump.realY      = playerY;
 									jump.realZ      = nextFrameZ;
 									jump.endingSpeed
 										= jumpCalculations[2].speedAfter;
@@ -708,6 +762,7 @@ public class MovementFancy extends Movement {
 												playerY, nextFrameZ);
 										jump.fallHeight = 0;
 										jump.realX      = nextFrameX;
+										jump.realY      = playerY;
 										jump.realZ      = nextFrameZ;
 										jump.endingSpeed
 											= jumpCalculations[2].speedAfter;
