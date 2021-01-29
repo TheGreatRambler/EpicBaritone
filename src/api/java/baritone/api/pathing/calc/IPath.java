@@ -21,7 +21,6 @@ import baritone.api.Settings;
 import baritone.api.pathing.goals.Goal;
 import baritone.api.pathing.movement.IMovement;
 import baritone.api.utils.BetterBlockPos;
-
 import java.util.HashSet;
 import java.util.List;
 
@@ -48,26 +47,24 @@ public interface IPath {
 	 */
 	List<BetterBlockPos> positions();
 
-/**
- * This path is actually going to be executed in the world. Do whatever
- * additional processing is required. (as opposed to Path objects that are just
- * constructed every frame for rendering)
- *
- * @return The result of path post processing
- */
-default IPath
-	postProcess() {
+	/**
+	 * This path is actually going to be executed in the world. Do whatever
+	 * additional processing is required. (as opposed to Path objects that are
+	 * just constructed every frame for rendering)
+	 *
+	 * @return The result of path post processing
+	 */
+	default IPath postProcess() {
 		throw new UnsupportedOperationException();
 	}
 
-/**
- * Returns the number of positions in this path. Equivalent to {@code
- * positions().size()}.
- *
- * @return Number of positions in this path
- */
-default int
-	length() {
+	/**
+	 * Returns the number of positions in this path. Equivalent to {@code
+	 * positions().size()}.
+	 *
+	 * @return Number of positions in this path
+	 */
+	default int length() {
 		return positions().size();
 	}
 
@@ -84,38 +81,35 @@ default int
 	 */
 	int getNumNodesConsidered();
 
-/**
- * Returns the start position of this path. This is the first element in the
- * {@link List} that is returned by {@link IPath#positions()}.
- *
- * @return The start position of this path
- */
-default BetterBlockPos
-	getSrc() {
+	/**
+	 * Returns the start position of this path. This is the first element in the
+	 * {@link List} that is returned by {@link IPath#positions()}.
+	 *
+	 * @return The start position of this path
+	 */
+	default BetterBlockPos getSrc() {
 		return positions().get(0);
 	}
 
-/**
- * Returns the end position of this path. This is the last element in the
- * {@link List} that is returned by {@link IPath#positions()}.
- *
- * @return The end position of this path.
- */
-default BetterBlockPos
-	getDest() {
+	/**
+	 * Returns the end position of this path. This is the last element in the
+	 * {@link List} that is returned by {@link IPath#positions()}.
+	 *
+	 * @return The end position of this path.
+	 */
+	default BetterBlockPos getDest() {
 		List<BetterBlockPos> pos = positions();
 		return pos.get(pos.size() - 1);
 	}
 
-/**
- * Returns the estimated number of ticks to complete the path from the given
- * node index.
- *
- * @param pathPosition The index of the node we're calculating from
- * @return The estimated number of ticks remaining frm the given position
- */
-default double
-	ticksRemainingFrom(int pathPosition) {
+	/**
+	 * Returns the estimated number of ticks to complete the path from the given
+	 * node index.
+	 *
+	 * @param pathPosition The index of the node we're calculating from
+	 * @return The estimated number of ticks remaining frm the given position
+	 */
+	default double ticksRemainingFrom(int pathPosition) {
 		double sum = 0;
 		// this is fast because we aren't requesting recalculation, it's just
 		// cached
@@ -126,41 +120,38 @@ default double
 		return sum;
 	}
 
-/**
- * Cuts off this path at the loaded chunk border, and returns the resulting
- * path. Default implementation just returns this path, without the intended
- * functionality. <p> The argument is supposed to be a BlockStateInterface LOL
- * LOL LOL LOL LOL
- *
- * @param bsi The block state lookup, highly cursed
- * @return The result of this cut-off operation
- */
-default IPath
-	cutoffAtLoadedChunks(Object bsi) {
+	/**
+	 * Cuts off this path at the loaded chunk border, and returns the resulting
+	 * path. Default implementation just returns this path, without the intended
+	 * functionality. <p> The argument is supposed to be a BlockStateInterface
+	 * LOL LOL LOL LOL LOL
+	 *
+	 * @param bsi The block state lookup, highly cursed
+	 * @return The result of this cut-off operation
+	 */
+	default IPath cutoffAtLoadedChunks(Object bsi) {
 		throw new UnsupportedOperationException();
 	}
 
-/**
- * Cuts off this path using the min length and cutoff factor settings, and
- * returns the resulting path. Default implementation just returns this path,
- * without the intended functionality.
- *
- * @param destination The end goal of this path
- * @return The result of this cut-off operation
- * @see Settings#pathCutoffMinimumLength
- * @see Settings#pathCutoffFactor
- */
-default IPath
-	staticCutoff(Goal destination) {
+	/**
+	 * Cuts off this path using the min length and cutoff factor settings, and
+	 * returns the resulting path. Default implementation just returns this
+	 * path, without the intended functionality.
+	 *
+	 * @param destination The end goal of this path
+	 * @return The result of this cut-off operation
+	 * @see Settings#pathCutoffMinimumLength
+	 * @see Settings#pathCutoffFactor
+	 */
+	default IPath staticCutoff(Goal destination) {
 		throw new UnsupportedOperationException();
 	}
 
-/**
- * Performs a series of checks to ensure that the assembly of the path went as
- * expected.
- */
-default void
-	sanityCheck() {
+	/**
+	 * Performs a series of checks to ensure that the assembly of the path went
+	 * as expected.
+	 */
+	default void sanityCheck() {
 		List<BetterBlockPos> path = positions();
 		List<IMovement> movements = movements();
 		if(!getSrc().equals(path.get(0))) {

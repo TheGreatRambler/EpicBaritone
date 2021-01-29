@@ -61,8 +61,9 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
 	@Override
 	protected Optional<IPath> calculate0(
 		long primaryTimeout, long failureTimeout) {
-		startNode                 = getNodeAtPosition(startX, startY, startZ,
-            BetterBlockPos.longHash(startX, startY, startZ));
+		startNode = getNodeAtPosition(startX, startY, startZ,
+			BetterBlockPos.longHash(startX, startY, startZ));
+		startNode.setPreviousMovement(null);
 		startNode.cost            = 0;
 		startNode.combinedCost    = startNode.estimatedCostToGoal;
 		BinaryHeapOpenSet openSet = new BinaryHeapOpenSet();
@@ -161,8 +162,13 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
 
 				PathNode neighbor
 					= getNodeAtPosition(res.x, res.y, res.z, hashCode);
+				Movement movement = moves.apply0(
+					calcContext, new BetterBlockPos(currentNode.x,
+									 currentNode.y, currentNode.z));
+				movement.override(res.cost);
 
-				getPathNode(neighbor, currentNode, openSet, bestHeuristicSoFar);
+				getPathNode(neighbor, currentNode, openSet, bestHeuristicSoFar,
+					movement);
 			}
 		}
 		if(cancelRequested) {
@@ -208,13 +214,15 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
 	}
 
 	private void getPathNode(PathNode neighbor, PathNode currentNode,
-		BinaryHeapOpenSet openSet, double[] bestHeuristicSoFar) {
+		BinaryHeapOpenSet openSet, double[] bestHeuristicSoFar,
+		Movement possibleMovement) {
 		double tentativeCost = currentNode.cost + actionCost;
 		if(neighbor.cost - tentativeCost > minimumImprovement) {
 			neighbor.previous = currentNode;
 			neighbor.cost     = tentativeCost;
 			neighbor.combinedCost
 				= tentativeCost + neighbor.estimatedCostToGoal;
+			neighbor.setPreviousMovement(possibleMovement);
 			if(neighbor.isOpen()) {
 				openSet.update(neighbor);
 			} else {

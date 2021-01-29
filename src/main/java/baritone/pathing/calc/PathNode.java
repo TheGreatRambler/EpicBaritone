@@ -20,6 +20,7 @@ package baritone.pathing.calc;
 import baritone.api.pathing.goals.Goal;
 import baritone.api.pathing.movement.ActionCosts;
 import baritone.api.utils.BetterBlockPos;
+import baritone.pathing.movement.Movement;
 
 /**
  * A node in the path, containing the cost and steps to get to it.
@@ -64,6 +65,11 @@ public final class PathNode {
 	 */
 	public int heapPosition;
 
+	/**
+	 * The chosen movement leading up to this node
+	 */
+	public Movement movement;
+
 	public PathNode(int x, int y, int z, Goal goal) {
 		this.previous            = null;
 		this.cost                = ActionCosts.COST_INF;
@@ -80,6 +86,10 @@ public final class PathNode {
 
 	public boolean isOpen() {
 		return heapPosition != -1;
+	}
+
+	public void setPreviousMovement(Movement movement) {
+		this.movement = movement;
 	}
 
 	/**

@@ -104,40 +104,12 @@ class Path extends PathBase {
 		if(path.isEmpty() || !movements.isEmpty()) {
 			throw new IllegalStateException();
 		}
-		for(int i = 0; i < path.size() - 1; i++) {
-			double cost   = nodes.get(i + 1).cost - nodes.get(i).cost;
-			Movement move = runBackwards(path.get(i), path.get(i + 1), cost);
-			if(move == null) {
-				return true;
-			} else {
-				movements.add(move);
+		for(PathNode node : nodes) {
+			if(node.movement != null) {
+				movements.add(node.movement);
 			}
 		}
 		return false;
-	}
-
-	private Movement runBackwards(
-		BetterBlockPos src, BetterBlockPos dest, double cost) {
-		// TODO include fancy movement in this
-		for(Moves moves : Moves.values()) {
-			Movement move = moves.apply0(context, src);
-			if(move.getDest().equals(dest)) {
-				// have to calculate the cost at calculation time so we can
-				// accurately judge whether a cost increase happened between
-				// cached calculation and real execution however, taking into
-				// account possible favoring that could skew the node cost, we
-				// really want the stricter limit of the two so we take the
-				// minimum of the path node cost difference, and the calculated
-				// cost
-				move.override(Math.min(move.calculateCost(context), cost));
-				return move;
-			}
-		}
-		// this is no longer called from bestPathSoFar, now it's in
-		// postprocessing
-		Helper.HELPER.logDebug("Movement became impossible during calculation "
-							   + src + " " + dest + " " + dest.subtract(src));
-		return null;
 	}
 
 	@Override
