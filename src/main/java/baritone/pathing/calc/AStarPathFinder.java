@@ -24,11 +24,11 @@ import baritone.api.pathing.movement.ActionCosts;
 import baritone.api.utils.BetterBlockPos;
 import baritone.pathing.calc.openset.BinaryHeapOpenSet;
 import baritone.pathing.movement.CalculationContext;
+import baritone.pathing.movement.Movement;
 import baritone.pathing.movement.Moves;
 import baritone.utils.pathing.BetterWorldBorder;
 import baritone.utils.pathing.Favoring;
 import baritone.utils.pathing.MutableMoveResult;
-
 import java.util.Optional;
 
 /**
@@ -40,6 +40,16 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
 
 	private final Favoring favoring;
 	private final CalculationContext calcContext;
+
+	private int numNodes               = 0;
+	private int numMovementsConsidered = 0;
+	private int numEmptyChunk          = 0;
+	private double minimumImprovement;
+	private boolean failing;
+	private boolean isFavoring;
+	private BetterWorldBorder worldBorder;
+	private double actionCost;
+	private long hashCode;
 
 	public AStarPathFinder(int startX, int startY, int startZ, Goal goal,
 		Favoring favoring, CalculationContext context) {
@@ -67,8 +77,7 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
 			bestSoFar[i]          = startNode;
 		}
 		MutableMoveResult res = new MutableMoveResult();
-		BetterWorldBorder worldBorder
-			= new BetterWorldBorder(calcContext.world.getWorldBorder());
+		worldBorder = new BetterWorldBorder(calcContext.world.getWorldBorder());
 		long startTime   = System.currentTimeMillis();
 		boolean slowPath = Baritone.settings().slowPath.value;
 		if(slowPath) {
@@ -84,19 +93,19 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
 			= startTime
 			  + (slowPath ? Baritone.settings().slowPathTimeoutMS.value
 						  : failureTimeout);
-		boolean failing            = true;
-		int numNodes               = 0;
-		int numMovementsConsidered = 0;
-		int numEmptyChunk          = 0;
-		boolean isFavoring         = !favoring.isEmpty();
-		int timeCheckInterval      = 1 << 6;
+		failing                = true;
+		numNodes               = 0;
+		numMovementsConsidered = 0;
+		numEmptyChunk          = 0;
+		isFavoring             = !favoring.isEmpty();
+		int timeCheckInterval  = 1 << 6;
 		int pathingMaxChunkBorderFetch
 			= Baritone.settings()
 				  .pathingMaxChunkBorderFetch
 				  .value; // grab all settings beforehand so that changing
 						  // settings during pathing doesn't cause a crash or
 						  // unpredictable behavior
-		double minimumImprovement
+		minimumImprovement
 			= Baritone.settings().minimumImprovementRepropagation.value
 				  ? MIN_IMPROVEMENT
 				  : 0;
@@ -131,95 +140,29 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
 					startNode, currentNode, numNodes, goal, calcContext));
 			}
 			for(Moves moves : allMoves) {
-				int newX = currentNode.x + moves.xOffset;
-				int newZ = currentNode.z + moves.zOffset;
-				if((newX >> 4 != currentNode.x >> 4
-					   || newZ >> 4 != currentNode.z >> 4)
-					&& !calcContext.isLoaded(newX, newZ)) {
-					// only need to check if the destination is a loaded chunk
-					// if it's in a different chunk than the start of the
-					// movement
-					if(!moves.dynamicXZ) { // only increment the counter if the
-										   // movement would have gone out of
-										   // bounds guaranteed
-						numEmptyChunk++;
-					}
+				int newX          = currentNode.x + moves.xOffset;
+				int newZ          = currentNode.z + moves.zOffset;
+				boolean dynamicXZ = moves.dynamicXZ;
+				int yOffset       = moves.yOffset;
+
+				if(impossibleLocations(
+					   currentNode, newX, newZ, dynamicXZ, yOffset)) {
 					continue;
 				}
-				if(!moves.dynamicXZ
-					&& !worldBorder.entirelyContains(newX, newZ)) {
-					continue;
-				}
-				if(currentNode.y + moves.yOffset > 256
-					|| currentNode.y + moves.yOffset < 0) {
-					continue;
-				}
+
 				res.reset();
 				moves.apply(calcContext, currentNode.x, currentNode.y,
 					currentNode.z, res);
-				numMovementsConsidered++;
-				double actionCost = res.cost;
-				if(actionCost >= ActionCosts.COST_INF) {
+
+				if(badNode(res, currentNode, newX, newZ, dynamicXZ,
+					   moves.dynamicY, yOffset, moves)) {
 					continue;
 				}
-				if(actionCost <= 0 || Double.isNaN(actionCost)) {
-					throw new IllegalStateException(
-						moves + " calculated implausible cost " + actionCost);
-				}
-				// check destination after verifying it's not COST_INF -- some
-				// movements return a static IMPOSSIBLE object with COST_INF and
-				// destination being 0,0,0 to avoid allocating a new result for
-				// every failed calculation
-				if(moves.dynamicXZ
-					&& !worldBorder.entirelyContains(
-						   res.x, res.z)) { // see issue #218
-					continue;
-				}
-				if(!moves.dynamicXZ && (res.x != newX || res.z != newZ)) {
-					throw new IllegalStateException(moves + " " + res.x + " "
-													+ newX + " " + res.z + " "
-													+ newZ);
-				}
-				if(!moves.dynamicY && res.y != currentNode.y + moves.yOffset) {
-					throw new IllegalStateException(
-						moves + " " + res.y + " "
-						+ (currentNode.y + moves.yOffset));
-				}
-				long hashCode = BetterBlockPos.longHash(res.x, res.y, res.z);
-				if(isFavoring) {
-					// see issue #18
-					actionCost *= favoring.calculate(hashCode);
-				}
+
 				PathNode neighbor
 					= getNodeAtPosition(res.x, res.y, res.z, hashCode);
-				double tentativeCost = currentNode.cost + actionCost;
-				if(neighbor.cost - tentativeCost > minimumImprovement) {
-					neighbor.previous = currentNode;
-					neighbor.cost     = tentativeCost;
-					neighbor.combinedCost
-						= tentativeCost + neighbor.estimatedCostToGoal;
-					if(neighbor.isOpen()) {
-						openSet.update(neighbor);
-					} else {
-						openSet.insert(
-							neighbor); // dont double count, dont insert into
-									   // open set if it's already there
-					}
-					for(int i = 0; i < COEFFICIENTS.length; i++) {
-						double heuristic = neighbor.estimatedCostToGoal
-										   + neighbor.cost / COEFFICIENTS[i];
-						if(bestHeuristicSoFar[i] - heuristic
-							> minimumImprovement) {
-							bestHeuristicSoFar[i] = heuristic;
-							bestSoFar[i]          = neighbor;
-							if(failing
-								&& getDistFromStartSq(neighbor)
-									   > MIN_DIST_PATH * MIN_DIST_PATH) {
-								failing = false;
-							}
-						}
-					}
-				}
+
+				getPathNode(neighbor, currentNode, openSet, bestHeuristicSoFar);
 			}
 		}
 		if(cancelRequested) {
@@ -238,5 +181,95 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
 					 + numMovementsConsidered + " movements considered");
 		}
 		return result;
+	}
+
+	private boolean impossibleLocations(PathNode currentNode, int newX,
+		int newZ, boolean dynamicXZ, int yOffset) {
+		if((newX >> 4 != currentNode.x >> 4 || newZ >> 4 != currentNode.z >> 4)
+			&& !calcContext.isLoaded(newX, newZ)) {
+			// Can't path in unloaded chunk
+			// only need to check if the destination is a loaded chunk
+			// if it's in a different chunk than the start of the
+			// movement
+			if(!dynamicXZ) { // only increment the counter if the
+							 // movement would have gone out of
+							 // bounds guaranteed
+				numEmptyChunk++;
+			}
+			return true;
+		}
+		if(!dynamicXZ && !worldBorder.entirelyContains(newX, newZ)) {
+			return true;
+		}
+		if(currentNode.y + yOffset > 256 || currentNode.y + yOffset < 0) {
+			return true;
+		}
+		return false;
+	}
+
+	private void getPathNode(PathNode neighbor, PathNode currentNode,
+		BinaryHeapOpenSet openSet, double[] bestHeuristicSoFar) {
+		double tentativeCost = currentNode.cost + actionCost;
+		if(neighbor.cost - tentativeCost > minimumImprovement) {
+			neighbor.previous = currentNode;
+			neighbor.cost     = tentativeCost;
+			neighbor.combinedCost
+				= tentativeCost + neighbor.estimatedCostToGoal;
+			if(neighbor.isOpen()) {
+				openSet.update(neighbor);
+			} else {
+				openSet.insert(neighbor); // dont double count, dont insert into
+										  // open set if it's already there
+			}
+			for(int i = 0; i < COEFFICIENTS.length; i++) {
+				double heuristic = neighbor.estimatedCostToGoal
+								   + neighbor.cost / COEFFICIENTS[i];
+				if(bestHeuristicSoFar[i] - heuristic > minimumImprovement) {
+					bestHeuristicSoFar[i] = heuristic;
+					bestSoFar[i]          = neighbor;
+					if(failing
+						&& getDistFromStartSq(neighbor)
+							   > MIN_DIST_PATH * MIN_DIST_PATH) {
+						failing = false;
+					}
+				}
+			}
+		}
+	}
+
+	private boolean badNode(MutableMoveResult res, PathNode currentNode,
+		int newX, int newZ, boolean dynamicXZ, boolean dynamicY, int yOffset,
+		Object moves) {
+		numMovementsConsidered++;
+		actionCost = res.cost;
+		if(actionCost >= ActionCosts.COST_INF) {
+			return true;
+		}
+		if(actionCost <= 0 || Double.isNaN(actionCost)) {
+			throw new IllegalStateException(
+				moves + " calculated implausible cost " + actionCost);
+		}
+		// check destination after verifying it's not COST_INF -- some
+		// movements return a static IMPOSSIBLE object with COST_INF and
+		// destination being 0,0,0 to avoid allocating a new result for
+		// every failed calculation
+		if(dynamicXZ
+			&& !worldBorder.entirelyContains(res.x, res.z)) { // see issue #218
+			return true;
+		}
+		if(!dynamicXZ && (res.x != newX || res.z != newZ)) {
+			throw new IllegalStateException(
+				moves + " " + res.x + " " + newX + " " + res.z + " " + newZ);
+		}
+		if(!dynamicY && res.y != currentNode.y + yOffset) {
+			throw new IllegalStateException(
+				moves + " " + res.y + " " + (currentNode.y + yOffset));
+		}
+		hashCode = BetterBlockPos.longHash(res.x, res.y, res.z);
+		if(isFavoring) {
+			// see issue #18
+			actionCost *= favoring.calculate(hashCode);
+		}
+		return false;
 	}
 }

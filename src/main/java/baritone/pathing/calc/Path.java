@@ -27,7 +27,6 @@ import baritone.pathing.movement.Movement;
 import baritone.pathing.movement.Moves;
 import baritone.pathing.path.CutoffPath;
 import baritone.utils.pathing.PathBase;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -119,6 +118,7 @@ class Path extends PathBase {
 
 	private Movement runBackwards(
 		BetterBlockPos src, BetterBlockPos dest, double cost) {
+		// TODO include fancy movement in this
 		for(Moves moves : Moves.values()) {
 			Movement move = moves.apply0(context, src);
 			if(move.getDest().equals(dest)) {
