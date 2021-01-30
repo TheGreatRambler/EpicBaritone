@@ -45,7 +45,7 @@ import net.minecraft.fluid.WaterFluid;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 
-public class MovementFancy extends Movement  {
+public class MovementFancy extends Movement {
 	private Jump thisJumpcalculation;
 
 	public MovementFancy(IBaritone baritone, Jump jump) {
@@ -135,29 +135,14 @@ public class MovementFancy extends Movement  {
 	private static double speedIncrease = maxSpeed / speedSubdivisions;
 
 	private static class JumpCalculation {
-		// Rounded values for A star
-		public double speed;
-		public int roundedX;
-		public int roundedZ;
-		// Actual values
 		public double x;
 		public double y;
 		public double z;
-		// Ticks to perform
 		public int tick;
-		// Calculated later
-		// public ArrayList<BetterBlockPos> blocksPassedThroughOffset;
-		public boolean firstTickJump;
-		// Measured by 0.5 increments up to 20.0
-		public double approximateSpeedBefore;
 		public double speedAfter;
 		public double relativeAngle;
 		public double[] hitboxX;
 		public double[] hitboxZ;
-		// Ignore strafe for now
-		// public boolean is45Strafe;
-		// TODO calculate distance based on first tick jump, movement speed
-		// going in, etc
 	}
 
 	private static class AngleAndSpeed {
@@ -187,7 +172,6 @@ public class MovementFancy extends Movement  {
 		public double startZ;
 		public double angle;
 		public BetterBlockPos endingPosition;
-		public double fallHeight;
 		public double realX;
 		public double realY;
 		public double realZ;
@@ -305,8 +289,6 @@ public class MovementFancy extends Movement  {
 					for(int tick = 0; tick <= maxNumberOfTicks; tick++) {
 						// https://www.mcpk.wiki/w/index.php?title=Horizontal_Movement_Formulas
 						JumpCalculation calc = new JumpCalculation();
-						calc.speed           = initialSpeed;
-						calc.firstTickJump   = isFirstTick;
 						double speedAfter
 							= jumpSpeed(initialSpeed, tick, isFirstTick);
 						calc.speedAfter    = speedAfter;
@@ -317,8 +299,6 @@ public class MovementFancy extends Movement  {
 						double jumpFall1   = jumpHeight(tick);
 						double offsetX     = Math.sin(angle) * jumpDistance;
 						double offsetZ     = Math.cos(angle) * jumpDistance;
-						calc.roundedX      = (int)offsetX;
-						calc.roundedZ      = (int)offsetZ;
 						calc.x             = offsetX;
 						calc.y             = jumpFall1;
 						calc.z             = offsetZ;
@@ -497,7 +477,6 @@ public class MovementFancy extends Movement  {
 												int)fallHeight];
 								jump.endingPosition = new BetterBlockPos(
 									playerX, playerY, playerZ);
-								jump.fallHeight  = fallHeight;
 								jump.realX       = playerX;
 								jump.realY       = playerY;
 								jump.realZ       = playerZ;
@@ -576,10 +555,9 @@ public class MovementFancy extends Movement  {
 											  0, 70, 0, null);
 									jump.endingPosition = new BetterBlockPos(
 										playerX, playerY, playerZ);
-									jump.fallHeight = fallHeight;
-									jump.realX      = playerX;
-									jump.realY      = playerY;
-									jump.realZ      = playerZ;
+									jump.realX = playerX;
+									jump.realY = playerY;
+									jump.realZ = playerZ;
 									jump.endingSpeed
 										= tickCalculation.speedAfter;
 									jump.validFeetLocations = new HashSet<>(
@@ -665,10 +643,9 @@ public class MovementFancy extends Movement  {
 									jump.cost  = 2.0 + context.jumpPenalty;
 									jump.endingPosition = new BetterBlockPos(
 										nextFrameX, playerY, nextFrameZ);
-									jump.fallHeight = 0;
-									jump.realX      = nextFrameX;
-									jump.realY      = playerY;
-									jump.realZ      = nextFrameZ;
+									jump.realX = nextFrameX;
+									jump.realY = playerY;
+									jump.realZ = nextFrameZ;
 									jump.endingSpeed
 										= jumpCalculations[2].speedAfter;
 									jump.validFeetLocations = ImmutableSet.of(
