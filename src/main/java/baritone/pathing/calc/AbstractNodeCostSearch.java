@@ -25,9 +25,8 @@ import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.Helper;
 import baritone.api.utils.PathCalculationResult;
 import baritone.pathing.movement.CalculationContext;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import baritone.utils.NotificationHelper;
-
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import java.util.Optional;
 
 /**
@@ -169,9 +168,9 @@ public abstract class AbstractNodeCostSearch implements IPathFinder, Helper {
 	 * @return The distance, squared
 	 */
 	protected double getDistFromStartSq(PathNode n) {
-		int xDiff = n.x - startX;
-		int yDiff = n.y - startY;
-		int zDiff = n.z - startZ;
+		int xDiff = (int)n.x - startX;
+		int yDiff = (int)n.y - startY;
+		int zDiff = (int)n.z - startZ;
 		return xDiff * xDiff + yDiff * yDiff + zDiff * zDiff;
 	}
 
@@ -190,7 +189,8 @@ public abstract class AbstractNodeCostSearch implements IPathFinder, Helper {
 	 * #107</a>
 	 */
 
-	protected PathNode getNodeAtPosition(int x, int y, int z, long hashCode) {
+	protected PathNode getNodeAtPosition(
+		double x, double y, double z, long hashCode) {
 		PathNode node = map.get(hashCode);
 		if(node == null) {
 			node = new PathNode(x, y, z, goal);

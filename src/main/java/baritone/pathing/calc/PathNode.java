@@ -32,9 +32,9 @@ public final class PathNode {
 	/**
 	 * The position of this node
 	 */
-	public final int x;
-	public final int y;
-	public final int z;
+	public final double x;
+	public final double y;
+	public final double z;
 
 	/**
 	 * Cached, should always be equal to goal.heuristic(pos)
@@ -70,10 +70,10 @@ public final class PathNode {
 	 */
 	public Movement movement;
 
-	public PathNode(int x, int y, int z, Goal goal) {
+	public PathNode(double x, double y, double z, Goal goal) {
 		this.previous            = null;
 		this.cost                = ActionCosts.COST_INF;
-		this.estimatedCostToGoal = goal.heuristic(x, y, z);
+		this.estimatedCostToGoal = goal.heuristic((int)x, (int)y, (int)z);
 		if(Double.isNaN(estimatedCostToGoal)) {
 			throw new IllegalStateException(
 				goal + " calculated implausible heuristic");

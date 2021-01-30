@@ -27,6 +27,8 @@ import baritone.pathing.movement.MovementHelper;
 import baritone.pathing.movement.MovementState;
 import baritone.utils.BlockStateInterface;
 import baritone.utils.pathing.MutableMoveResult;
+import java.util.HashSet;
+import java.util.Set;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -34,9 +36,6 @@ import net.minecraft.block.StairsBlock;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.fluid.WaterFluid;
 import net.minecraft.util.Direction;
-
-import java.util.HashSet;
-import java.util.Set;
 
 public class MovementParkour extends Movement {
 
@@ -87,7 +86,7 @@ public class MovementParkour extends Movement {
 		}
 		if(MovementHelper.avoidWalkingInto(adj)
 			&& !(adj.getFluidState().getFluid()
-					   instanceof WaterFluid)) { // magma sucks
+					 instanceof WaterFluid)) { // magma sucks
 			return;
 		}
 		if(!MovementHelper.fullyPassable(
@@ -134,9 +133,9 @@ public class MovementParkour extends Movement {
 				   destInto)) {
 				if(i <= 3 && context.allowParkourAscend && context.canSprint
 					&& MovementHelper.canWalkOn(
-						   context.bsi, destX, y, destZ, destInto)
+						context.bsi, destX, y, destZ, destInto)
 					&& checkOvershootSafety(
-						   context.bsi, destX + xDiff, y + 1, destZ + zDiff)) {
+						context.bsi, destX + xDiff, y + 1, destZ + zDiff)) {
 					res.x    = destX;
 					res.y    = y + 1;
 					res.z    = destZ;
@@ -150,7 +149,7 @@ public class MovementParkour extends Movement {
 			// farmland haha
 			if(landingOn.getBlock() != Blocks.FARMLAND
 				&& MovementHelper.canWalkOn(
-					   context.bsi, destX, y - 1, destZ, landingOn)) {
+					context.bsi, destX, y - 1, destZ, landingOn)) {
 				if(checkOvershootSafety(
 					   context.bsi, destX + xDiff, y, destZ + zDiff)) {
 					res.x    = destX;

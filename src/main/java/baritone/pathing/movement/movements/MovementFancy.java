@@ -736,10 +736,9 @@ public class MovementFancy extends Movement {
 										jump.endingPosition
 											= new BetterBlockPos(nextFrameX,
 												playerY, nextFrameZ);
-										jump.fallHeight = 0;
-										jump.realX      = nextFrameX;
-										jump.realY      = playerY;
-										jump.realZ      = nextFrameZ;
+										jump.realX = nextFrameX;
+										jump.realY = playerY;
+										jump.realZ = nextFrameZ;
 										jump.endingSpeed
 											= jumpCalculations[2].speedAfter;
 										jump.validFeetLocations

@@ -17,12 +17,12 @@
 
 package baritone.api.utils;
 
+import java.util.Arrays;
+import javax.annotation.Nonnull;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.vector.Vector3i;
-
-import javax.annotation.Nonnull;
 
 /**
  * A better BlockPos that has fewer hash collisions (and slightly more
@@ -103,6 +103,11 @@ public final class BetterBlockPos extends BlockPos {
 		hash      = 8734625L * hash + y;
 		hash      = 2873465L * hash + z;
 		return hash;
+	}
+
+	public static long longHash(double x, double y, double z) {
+		final double[] numbers = { x, y, z };
+		return Arrays.hashCode(numbers);
 	}
 
 	@Override
