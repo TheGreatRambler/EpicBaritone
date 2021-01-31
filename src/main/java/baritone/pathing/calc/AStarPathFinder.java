@@ -18,6 +18,7 @@
 package baritone.pathing.calc;
 
 import baritone.Baritone;
+import baritone.api.BaritoneAPI;
 import baritone.api.pathing.calc.IPath;
 import baritone.api.pathing.goals.Goal;
 import baritone.api.pathing.movement.ActionCosts;
@@ -30,6 +31,7 @@ import baritone.pathing.movement.movements.MovementFancy;
 import baritone.utils.pathing.BetterWorldBorder;
 import baritone.utils.pathing.Favoring;
 import baritone.utils.pathing.MutableMoveResult;
+import java.util.ArrayList;
 import java.util.Optional;
 
 /**
@@ -165,12 +167,60 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
 					continue;
 				}
 
+				hashCode = BetterBlockPos.longHash(
+					(double)res.x + 0.5, (double)res.y, (double)res.z + 0.5);
+				if(isFavoring) {
+					// see issue #18
+					actionCost *= favoring.calculate(hashCode);
+				}
+
 				PathNode neighbor = getNodeAtPosition((double)res.x + 0.5,
 					(double)res.y, (double)res.z + 0.5, hashCode);
 				Movement movement = moves.apply0(
 					calcContext, new BetterBlockPos(currentNode.x,
 									 currentNode.y, currentNode.z));
 				movement.override(res.cost);
+
+				getPathNode(neighbor, currentNode, openSet, bestHeuristicSoFar,
+					movement);
+			}
+
+			ArrayList<MovementFancy> possibleFancyMovements
+				= MovementFancy.getMoves(calcContext.getBaritone(),
+					currentNode.movement, calcContext);
+
+			for(MovementFancy movement : possibleFancyMovements) {
+				int yOffset = movement.getDest().y - (int)currentNode.y;
+
+				double x = movement.getDestX();
+				double y = (double)movement.getDest().y;
+				double z = movement.getDestZ();
+
+				if(impossibleLocations(currentNode, movement.getDest().x,
+					   movement.getDest().z, true, yOffset)) {
+					continue;
+				}
+
+				res.reset();
+				res.cost = movement.getCost();
+				res.x    = movement.getDest().x;
+				res.y    = movement.getDest().y;
+				res.z    = movement.getDest().z;
+
+				movement.override(res.cost);
+
+				if(badNode(res, currentNode, movement.getDest().x,
+					   movement.getDest().z, true, true, yOffset, movement)) {
+					continue;
+				}
+
+				hashCode = BetterBlockPos.longHash(x, y, z);
+				if(isFavoring) {
+					// see issue #18
+					actionCost *= favoring.calculate(hashCode);
+				}
+
+				PathNode neighbor = getNodeAtPosition(x, y, z, hashCode);
 
 				getPathNode(neighbor, currentNode, openSet, bestHeuristicSoFar,
 					movement);
@@ -279,12 +329,6 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
 		if(!dynamicY && res.y != currentNode.y + yOffset) {
 			throw new IllegalStateException(
 				moves + " " + res.y + " " + (currentNode.y + yOffset));
-		}
-		hashCode = BetterBlockPos.longHash(
-			(double)res.x + 0.5, (double)res.y, (double)res.z + 0.5);
-		if(isFavoring) {
-			// see issue #18
-			actionCost *= favoring.calculate(hashCode);
 		}
 		return false;
 	}

@@ -375,7 +375,7 @@ public class MovementFancy extends Movement {
 		jumpCalculationsSpecificNotFirstTick = calcsNotFirstTick;
 	}
 
-	public static ArrayList<JumpCalculation[]> getJumpCalculations(
+	private static ArrayList<JumpCalculation[]> getJumpCalculations(
 		double angle, double speed, boolean firstTick) {
 		// Using the current location, angle and speed of the player, find the
 		// possible jumps (and every tick of those possible jumps)
