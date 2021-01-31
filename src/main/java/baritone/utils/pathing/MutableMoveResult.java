@@ -26,14 +26,10 @@ import baritone.api.pathing.movement.ActionCosts;
  * @author leijurv
  */
 public final class MutableMoveResult {
-	// Integer, actually refers to the middle of the block
+	// Used only for integer results
 	public int x;
 	public int y;
 	public int z;
-	// Refers to the exact location
-	public double xDouble;
-	public double yDouble;
-	public double zDouble;
 	public double cost;
 
 	public MutableMoveResult() {

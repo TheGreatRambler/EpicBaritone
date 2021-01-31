@@ -62,9 +62,10 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
 	@Override
 	protected Optional<IPath> calculate0(
 		long primaryTimeout, long failureTimeout) {
-		startNode = getNodeAtPosition(startX, startY, startZ,
+		startNode = getNodeAtPosition((double)startX + 0.5, (double)startY,
+			(double)startZ + 0.5,
 			BetterBlockPos.longHash(
-				(double)startX, (double)startY, (double)startZ));
+				(double)startX + 0.5, (double)startY, (double)startZ + 0.5));
 		startNode.setPreviousMovement(null);
 		startNode.cost            = 0;
 		startNode.combinedCost    = startNode.estimatedCostToGoal;
@@ -135,8 +136,8 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
 			PathNode currentNode = openSet.removeLowest();
 			mostRecentConsidered = currentNode;
 			numNodes++;
-			if(goal.isInGoal((int)currentNode.x, (int)currentNode.y,
-				   (int)currentNode.z)) {
+			if(goal.isInGoal((int)Math.floor(currentNode.x), (int)currentNode.y,
+				   (int)Math.floor(currentNode.z))) {
 				logDebug("Took " + (System.currentTimeMillis() - startTime)
 						 + "ms, " + numMovementsConsidered
 						 + " movements considered");
@@ -144,8 +145,8 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
 					startNode, currentNode, numNodes, goal, calcContext));
 			}
 			for(Moves moves : allMoves) {
-				int newX          = (int)currentNode.x + moves.xOffset;
-				int newZ          = (int)currentNode.z + moves.zOffset;
+				int newX = (int)Math.floor(currentNode.x) + moves.xOffset;
+				int newZ = (int)Math.floor(currentNode.z) + moves.zOffset;
 				boolean dynamicXZ = moves.dynamicXZ;
 				int yOffset       = moves.yOffset;
 
@@ -155,8 +156,9 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
 				}
 
 				res.reset();
-				moves.apply(calcContext, (int)currentNode.x, (int)currentNode.y,
-					(int)currentNode.z, res);
+				// Calculate using the rounded block location
+				moves.apply(calcContext, (int)Math.floor(currentNode.x),
+					(int)currentNode.y, (int)Math.floor(currentNode.z), res);
 
 				if(badNode(res, currentNode, newX, newZ, dynamicXZ,
 					   moves.dynamicY, yOffset, moves)) {
@@ -194,8 +196,8 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
 
 	private boolean impossibleLocations(PathNode currentNode, int newX,
 		int newZ, boolean dynamicXZ, int yOffset) {
-		if((newX >> 4 != (int)currentNode.x >> 4
-			   || newZ >> 4 != (int)currentNode.z >> 4)
+		if((newX >> 4 != (int)Math.floor(currentNode.x) >> 4
+			   || newZ >> 4 != (int)Math.floor(currentNode.z) >> 4)
 			&& !calcContext.isLoaded(newX, newZ)) {
 			// Can't path in unloaded chunk
 			// only need to check if the destination is a loaded chunk
@@ -211,7 +213,8 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
 		if(!dynamicXZ && !worldBorder.entirelyContains(newX, newZ)) {
 			return true;
 		}
-		if(currentNode.y + yOffset > 256 || currentNode.y + yOffset < 0) {
+		if((int)currentNode.y + yOffset > 256
+			|| (int)currentNode.y + yOffset < 0) {
 			return true;
 		}
 		return false;
@@ -266,8 +269,7 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
 		// destination being 0,0,0 to avoid allocating a new result for
 		// every failed calculation
 		if(dynamicXZ
-			&& !worldBorder.entirelyContains(
-				(int)res.x, (int)res.z)) { // see issue #218
+			&& !worldBorder.entirelyContains(res.x, res.z)) { // see issue #218
 			return true;
 		}
 		if(!dynamicXZ && (res.x != newX || res.z != newZ)) {
@@ -278,7 +280,8 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
 			throw new IllegalStateException(
 				moves + " " + res.y + " " + (currentNode.y + yOffset));
 		}
-		hashCode = BetterBlockPos.longHash(res.x, res.y, res.z);
+		hashCode = BetterBlockPos.longHash(
+			(double)res.x + 0.5, (double)res.y, (double)res.z + 0.5);
 		if(isFavoring) {
 			// see issue #18
 			actionCost *= favoring.calculate(hashCode);

@@ -176,7 +176,9 @@ public interface IPath {
 			}
 			if(!dest.equals(movement.getDest())) {
 				throw new IllegalStateException(
-					"Path destination is not equal to the movement destination");
+					"Path destination (" + dest
+					+ ")is not equal to the movement destination ("
+					+ movement.getDest() + "), movement " + movement);
 			}
 			if(seenSoFar.contains(src)) {
 				throw new IllegalStateException(
