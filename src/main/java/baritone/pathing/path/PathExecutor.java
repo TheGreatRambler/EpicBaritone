@@ -17,6 +17,8 @@
 
 package baritone.pathing.path;
 
+import static baritone.api.pathing.movement.MovementStatus.*;
+
 import baritone.Baritone;
 import baritone.api.pathing.calc.IPath;
 import baritone.api.pathing.movement.ActionCosts;
@@ -32,15 +34,12 @@ import baritone.pathing.movement.Movement;
 import baritone.pathing.movement.MovementHelper;
 import baritone.pathing.movement.movements.*;
 import baritone.utils.BlockStateInterface;
+import java.util.*;
 import net.minecraft.block.Blocks;
 import net.minecraft.util.Tuple;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.math.vector.Vector3i;
-
-import java.util.*;
-
-import static baritone.api.pathing.movement.MovementStatus.*;
 
 /**
  * Behavior to execute a precomputed path
@@ -99,7 +98,8 @@ public class PathExecutor implements IPathExecutor, Helper {
 		if(pathPosition >= path.length()) {
 			return true; // stop bugging me, I'm done
 		}
-		Movement movement       = (Movement)path.movements().get(pathPosition);
+		Movement movement = (Movement)path.movements().get(pathPosition);
+		System.out.println("Current movement: " + movement);
 		BetterBlockPos whereAmI = ctx.playerFeet();
 		if(!movement.getValidPositions().contains(whereAmI)) {
 			for(int i = 0; i < pathPosition && i < path.length();
@@ -425,8 +425,8 @@ public class PathExecutor implements IPathExecutor, Helper {
 			IMovement next = path.movements().get(pathPosition + 1);
 			if(next instanceof MovementAscend
 				&& sprintableAscend(ctx, (MovementTraverse)current,
-					   (MovementAscend)next,
-					   path.movements().get(pathPosition + 2))) {
+					(MovementAscend)next,
+					path.movements().get(pathPosition + 2))) {
 				if(skipNow(ctx, current)) {
 					logDebug("Skipping traverse to straight ascend");
 					pathPosition++;
@@ -460,7 +460,7 @@ public class PathExecutor implements IPathExecutor, Helper {
 				IMovement next = path.movements().get(pathPosition + 1);
 				if(next instanceof MovementAscend
 					&& current.getDirection().up().equals(
-						   next.getDirection().down())) {
+						next.getDirection().down())) {
 					// a descend then an ascend in the same direction
 					pathPosition++;
 					onChangeInPathPosition();
@@ -490,7 +490,7 @@ public class PathExecutor implements IPathExecutor, Helper {
 			IMovement prev = path.movements().get(pathPosition - 1);
 			if(prev instanceof MovementDescend
 				&& prev.getDirection().up().equals(
-					   current.getDirection().down())) {
+					current.getDirection().down())) {
 				BlockPos center = current.getSrc().up();
 				// playerFeet adds 0.1251 to account for soul sand
 				// farmland is 0.9375
@@ -504,8 +504,8 @@ public class PathExecutor implements IPathExecutor, Helper {
 			if(pathPosition < path.length() - 2
 				&& prev instanceof MovementTraverse
 				&& sprintableAscend(ctx, (MovementTraverse)prev,
-					   (MovementAscend)current,
-					   path.movements().get(pathPosition + 1))) {
+					(MovementAscend)current,
+					path.movements().get(pathPosition + 1))) {
 				return true;
 			}
 		}
@@ -583,10 +583,10 @@ public class PathExecutor implements IPathExecutor, Helper {
 	private static boolean skipNow(IPlayerContext ctx, IMovement current) {
 		double offTarget = Math.abs(current.getDirection().getX()
 									* (current.getSrc().z + 0.5D
-										  - ctx.player().getPositionVec().z))
+										- ctx.player().getPositionVec().z))
 						   + Math.abs(current.getDirection().getZ()
 									  * (current.getSrc().x + 0.5D
-											- ctx.player().getPositionVec().x));
+										  - ctx.player().getPositionVec().x));
 		if(offTarget > 0.1) {
 			return false;
 		}
@@ -597,12 +597,13 @@ public class PathExecutor implements IPathExecutor, Helper {
 			return true;
 		}
 		// wait 0.3
-		double flatDist = Math.abs(current.getDirection().getX()
-								   * (headBonk.getX() + 0.5D
-										 - ctx.player().getPositionVec().x))
-						  + Math.abs(current.getDirection().getZ()
-									 * (headBonk.getZ() + 0.5
-										   - ctx.player().getPositionVec().z));
+		double flatDist
+			= Math.abs(
+				  current.getDirection().getX()
+				  * (headBonk.getX() + 0.5D - ctx.player().getPositionVec().x))
+			  + Math.abs(
+				  current.getDirection().getZ()
+				  * (headBonk.getZ() + 0.5 - ctx.player().getPositionVec().z));
 		return flatDist > 0.8;
 	}
 
@@ -705,9 +706,9 @@ public class PathExecutor implements IPathExecutor, Helper {
 				ret.ticksOnCurrent    = ticksOnCurrent;
 				return ret;
 			})
-			.orElseGet(this ::cutIfTooLong); // dont actually call cutIfTooLong
-											 // every tick if we won't actually
-											 // use it, use a method reference
+			.orElseGet(this::cutIfTooLong); // dont actually call cutIfTooLong
+											// every tick if we won't actually
+											// use it, use a method reference
 	}
 
 	private PathExecutor cutIfTooLong() {

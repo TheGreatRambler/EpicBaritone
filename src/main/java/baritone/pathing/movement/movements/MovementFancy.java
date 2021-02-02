@@ -20,12 +20,14 @@ package baritone.pathing.movement.movements;
 import baritone.api.IBaritone;
 import baritone.api.pathing.movement.ActionCosts;
 import baritone.api.pathing.movement.MovementStatus;
+import baritone.api.utils.*;
 import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.input.Input;
 import baritone.pathing.movement.CalculationContext;
 import baritone.pathing.movement.Movement;
 import baritone.pathing.movement.MovementHelper;
 import baritone.pathing.movement.MovementState;
+import baritone.pathing.movement.MovementState.MovementTarget;
 import baritone.utils.BlockStateInterface;
 import baritone.utils.pathing.MutableMoveResult;
 import com.google.common.collect.ImmutableSet;
@@ -70,6 +72,33 @@ public class MovementFancy extends Movement {
 		return thisJumpcalculation;
 	}
 
+	@Override
+	public MovementState updateState(MovementState state) {
+		super.updateState(state);
+		if(state.getStatus() != MovementStatus.RUNNING) {
+			return state;
+		}
+
+		double fallDistanceFromDest
+			= ctx.player().getPositionVec().y - (double)dest.y;
+		if(ctx.playerFeet().equals(dest) && fallDistanceFromDest < 0.5) {
+			state.setInput(Input.JUMP, false);
+			return state.setStatus(MovementStatus.SUCCESS);
+		} else if(!playerInValidPosition()
+				  && !(
+					  MovementHelper.isLiquid(ctx, src)
+					  && getValidPositions().contains(ctx.playerFeet().up()))) {
+			return state.setStatus(MovementStatus.UNREACHABLE);
+		}
+		if(ctx.playerFeet().equals(src)) {
+			state.setInput(Input.JUMP, true);
+		}
+		state.setInput(Input.SPRINT, true);
+
+		MovementHelper.moveTowards(ctx, state, dest);
+		return state;
+	}
+
 	public static ArrayList<MovementFancy> getMoves(IBaritone baritone,
 		Movement previousMovement, CalculationContext context) {
 		double x;
@@ -109,6 +138,10 @@ public class MovementFancy extends Movement {
 			// Calculate angle from destination
 			BlockPos directionPos = previousMovement.getDirection();
 			angle = Math.atan2(directionPos.getZ(), directionPos.getX());
+
+			if(angle < 0.0) {
+				angle = maxAngle + angle;
+			}
 
 			speed     = context.canSprint ? 5.612 : 4.317;
 			firstTick = false;
@@ -150,7 +183,8 @@ public class MovementFancy extends Movement {
 		public double speed;
 
 		public AngleAndSpeed(double angle_, double speed_) {
-			angle = angle_;
+			// Need to round
+			angle = roundPlaces(angle_, 3);
 			speed = speed_;
 		}
 
@@ -163,6 +197,17 @@ public class MovementFancy extends Movement {
 		@Override
 		public int hashCode() {
 			return Objects.hash(angle, speed);
+		}
+
+		@Override
+		public String toString() {
+			return "{angle=" + Double.toString(angle)
+				+ ", speed=" + Double.toString(speed) + "}";
+		}
+
+		private static double roundPlaces(double value, int places) {
+			double scale = Math.pow(10, places);
+			return Math.round(value * scale) / scale;
 		}
 	}
 
@@ -178,8 +223,20 @@ public class MovementFancy extends Movement {
 		public double cost;
 		public double endingSpeed;
 		public Set<BetterBlockPos> validFeetLocations;
-		// Used for headhitters
 		public BetterBlockPos blockToPlace;
+
+		@Override
+		public String toString() {
+			return "{startX=" + Double.toString(startX)
+				+ ", startY=" + Double.toString(startY) + ", startZ="
+				+ Double.toString(startZ) + ", angle=" + Double.toString(angle)
+				+ ", endingPosition=" + endingPosition + ", realX="
+				+ Double.toString(realX) + ", realY=" + Double.toString(realY)
+				+ ", realZ=" + Double.toString(realZ)
+				+ ", cost=" + Double.toString(cost) + ", endingSpeed="
+				+ Double.toString(endingSpeed) + ", validFeetLocations="
+				+ validFeetLocations + ", blockToPlace=" + blockToPlace + "}";
+		}
 	}
 
 	// Movement multiplier
@@ -286,7 +343,7 @@ public class MovementFancy extends Movement {
 					JumpCalculation[] tickCalculations
 						= new JumpCalculation[maxNumberOfTicks];
 
-					for(int tick = 0; tick <= maxNumberOfTicks; tick++) {
+					for(int tick = 0; tick < maxNumberOfTicks; tick++) {
 						// https://www.mcpk.wiki/w/index.php?title=Horizontal_Movement_Formulas
 						JumpCalculation calc = new JumpCalculation();
 						double speedAfter
@@ -383,6 +440,7 @@ public class MovementFancy extends Movement {
 		angle = Math.floor(angle / angleIncrease) * angleIncrease;
 		ArrayList<JumpCalculation[]> calcs = new ArrayList<>();
 		// Will loop exactly as many as angleSubdivisions
+		System.out.println(angle);
 		for(double angleOffset = 0; angleOffset < maxAngle;
 			angleOffset += angleIncrease) {
 			// Make sure angle is in [0,maxAngle) range
@@ -390,14 +448,22 @@ public class MovementFancy extends Movement {
 			double adjustedSpeed = Math.cos(angleOffset) * speed;
 			// Round out the speed as well
 			adjustedSpeed
-				= Math.floor(adjustedSpeed / speedIncrease) * speedIncrease;
-			AngleAndSpeed angleAndSpeed
-				= new AngleAndSpeed(adjustedAngle, adjustedSpeed);
-			JumpCalculation[] calc
-				= firstTick
-					  ? jumpCalculationsSpecificFirstTick.get(angleAndSpeed)
-					  : jumpCalculationsSpecificNotFirstTick.get(angleAndSpeed);
-			calcs.add(calc);
+				= Math.floor(adjustedSpeed / speedIncrease) * speedIncrease
+				  + 0.0;
+
+			// Player wont jump in a direction opposite to their speed
+			if(adjustedSpeed >= 0.0) {
+				AngleAndSpeed angleAndSpeed
+					= new AngleAndSpeed(adjustedAngle, adjustedSpeed);
+				JumpCalculation[] calc
+					= firstTick
+						  ? jumpCalculationsSpecificFirstTick.get(angleAndSpeed)
+						  : jumpCalculationsSpecificNotFirstTick.get(
+							  angleAndSpeed);
+				calcs.add(calc);
+				System.out.println(angleAndSpeed);
+				System.out.println(calc);
+			}
 		}
 		return calcs;
 	}
@@ -459,16 +525,18 @@ public class MovementFancy extends Movement {
 										 context, pos.x, pos.y, pos.z));
 					if(allEmpty) {
 						// Get ground tiles
-						Stream<BetterBlockPos> groundBlocks
-							= getPlayerBlockPosition(
-								tickCalculation, playerX, playerY, playerZ, 0.0)
-								  .stream();
+						ArrayList<BetterBlockPos> groundBlocks
+							= getPlayerBlockPosition(tickCalculation, playerX,
+								playerY, playerZ, 0.0);
 						// Check if the ground has arrived
 						if(Math.ceil(playerY) != Math.ceil(playerY)) {
 							// Check if any can be landed on
-							if(groundBlocks.anyMatch(pos
+							if(groundBlocks.stream().anyMatch(pos
 								   -> MovementHelper.canWalkOn(
-									   context.bsi, pos.x, pos.y, pos.z))) {
+										  context.bsi, pos.x, pos.y, pos.z)
+										  && !MovementHelper.isLiquid(
+											  context.bsi.get0(
+												  pos.x, pos.y, pos.z)))) {
 								// This is a possible spot, but break from here
 								Jump jump  = new Jump();
 								jump.angle = tickCalculation.relativeAngle;
@@ -493,7 +561,7 @@ public class MovementFancy extends Movement {
 								break;
 							} else {
 								BetterBlockPos placeableBlock
-									= groundBlocks
+									= groundBlocks.stream()
 										  .filter(pos -> {
 											  for(int i = 0; i < 5; i++) {
 												  int againstX
@@ -573,7 +641,7 @@ public class MovementFancy extends Movement {
 						} else {
 							// Check just in case
 							// Player may drift into next block
-							if(!groundBlocks.allMatch(pos
+							if(!groundBlocks.stream().allMatch(pos
 								   -> MovementHelper.fullyPassable(
 									   context, pos.x, pos.y, pos.z))) {
 								// Impossible to calculate from
@@ -602,10 +670,9 @@ public class MovementFancy extends Movement {
 										 context, pos.x, pos.y, pos.z));
 					if(allEmpty) {
 						// Check head blocks for headhitters
-						Stream<BetterBlockPos> headhitterLocations
+						ArrayList<BetterBlockPos> headhitterLocations
 							= getPlayerBlockPosition(tickCalculation, playerX,
-								playerY, playerZ, playerHeight)
-								  .stream();
+								playerY, playerZ, playerHeight);
 						if(currentTick == 1) {
 							// Headhitters can only be used on frame 2
 							// For 2 block ceilings
@@ -628,14 +695,16 @@ public class MovementFancy extends Movement {
 												 context, pos.x, pos.y, pos.z));
 							if(allEmptyNextFrame) {
 								// Get ground tiles
-								Stream<BetterBlockPos> groundBlocks
+								ArrayList<BetterBlockPos> groundBlocks
 									= getPlayerBlockPosition(tickCalculation,
-										nextFrameX, y, nextFrameZ, 0.0)
-										  .stream();
+										nextFrameX, y, nextFrameZ, 0.0);
 								// Check if any can be landed on
-								if(groundBlocks.anyMatch(pos
+								if(groundBlocks.stream().anyMatch(pos
 									   -> MovementHelper.canWalkOn(
-										   context.bsi, pos.x, pos.y, pos.z))) {
+											  context.bsi, pos.x, pos.y, pos.z)
+											  && !MovementHelper.isLiquid(
+												  context.bsi.get0(
+													  pos.x, pos.y, pos.z)))) {
 									// This is a possible spot, but break from
 									// here. Headhitter jump signals end of jump
 									Jump jump  = new Jump();
@@ -667,7 +736,7 @@ public class MovementFancy extends Movement {
 									break;
 								} else {
 									BetterBlockPos placeableBlock
-										= groundBlocks
+										= groundBlocks.stream()
 											  .filter(pos -> {
 												  for(int i = 0; i < 5; i++) {
 													  int againstX
@@ -769,7 +838,7 @@ public class MovementFancy extends Movement {
 						} else {
 							// Headhitters CAN be used other frames, but I'm not
 							// smart enough to figure it out
-							if(!headhitterLocations.allMatch(pos
+							if(!headhitterLocations.stream().allMatch(pos
 								   -> MovementHelper.fullyPassable(
 									   context, pos.x, pos.y, pos.z))) {
 								// These blocks being solid any other time is

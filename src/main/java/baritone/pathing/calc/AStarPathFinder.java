@@ -190,6 +190,8 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
 					currentNode.movement, calcContext);
 
 			for(MovementFancy movement : possibleFancyMovements) {
+				System.out.println(movement.getImplementedJump());
+
 				int yOffset = movement.getDest().y - (int)currentNode.y;
 
 				double x = movement.getDestX();
@@ -202,7 +204,7 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
 				}
 
 				res.reset();
-				res.cost = movement.getCost();
+				res.cost = movement.getCost(calcContext);
 				res.x    = movement.getDest().x;
 				res.y    = movement.getDest().y;
 				res.z    = movement.getDest().z;
